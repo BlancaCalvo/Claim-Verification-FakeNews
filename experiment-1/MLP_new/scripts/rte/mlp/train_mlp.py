@@ -83,14 +83,16 @@ if __name__ == "__main__":
     train_feats, dev_feats, test_feats = f.load(train_ds, dev_ds, test_ds)
 
 
-    print(train_feats[0][0])
-    print(len(train_feats[0][0]))
-    print(train_ds.data[0])
+    #print(train_feats[0][0])
+    #print(len(train_feats[0][0]))
+    #print(train_ds.data[0])
 
     if args.features == 'BERT':
         input_shape = len(train_feats[0][0])
+        print(input_shape)
     if args.features == 'TFIDF':
         input_shape = train_feats[0].shape[1]
+        print(input_shape)
 
     model = SimpleMLP(input_shape,100,3)
 

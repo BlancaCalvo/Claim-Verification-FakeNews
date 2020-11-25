@@ -1,8 +1,12 @@
 import pandas as pd
+import csv
 
 header_list = ['id', 'claim', 'original_label', 'url', 'reason_label', 'categories', 'speaker', 'factchecker', 'tags', 'article_title', 'publication_date', 'claim_date', 'entities']
 
-data = pd.read_csv('data/MultiFC/train.tsv', sep='\t', names=header_list)
+
+data = pd.read_csv('data/MultiFC/train_trial.tsv', sep='\t', names=header_list)
+print(len(data))
+
 
 true_labels = ['conclusion: accurate', 'truth!', 'correct', 'true',  'determination: true', 'factscan score: true', 'verdict: true', 'fact', 'accurate' ]
 
@@ -29,15 +33,20 @@ data = data[data['label']!='other']
 print(data.groupby('label').count()['id'])
 
 def import_snippets(id_claim):
+	evidences = []
 	header_snippets = ['rank_position', 'title', 'snippet', 'snippet_url']
 	try:
 		snippets = pd.read_csv('data/MultiFC/snippets/' + id_claim, sep='\t', names=header_snippets)
-		evidences = snippets['snippet'].to_list()
-		while len(evidences) < 5:
-			evidences = evidences.append('')
+		found = snippets['snippet'].to_list()
+		for f in found:
+			f=f.replace('\r\n', ' ')
+			f = f.replace('\n', ' ')
+			f = f.replace('\r', ' ')
+			f = f.replace('\t', '')
+			evidences.append(str(f))
 	except:
 		evidences = ['','','','','']
-	return evidences
+	return evidences[:5]
 
 # create tsv with no column names with the order
 # id	label	claim	evidence 	evidence	evidence	evidence	evidence
@@ -54,4 +63,18 @@ data = data[data.columns[new_order]]
 print(data.head())
 print(data.groupby('label').count()['id'])
 
-data.to_csv('data/MultiFC/train_gear_formatted_MultiFC.tsv', sep='\t', header=False, index=False)
+#data = data[~data.claim.str.contains("XYZ")]
+#data = data.values.tolist()
+
+#with open('output.tsv', 'wt') as out_file:
+#	tsv_writer = csv.writer(out_file, delimiter='\t')
+#	for line in data:
+#		print(line[1])
+#		tsv_writer.writerow(line)
+
+#data = data.replace('http.*\r [0-9].*[\r [0-9].*]*\"', '\"', regex=True)
+
+with open('data/MultiFC/train_data.tsv', mode='w', newline='\n') as f:
+	data.to_csv(f, sep='\t', header=False, index=False, line_terminator='\n', encoding='utf-8')
+
+#data.to_csv('data/MultiFC/train_data.tsv', sep='\t', header=False, line_terminator='\n') #, quotechar='"', quoting=csv.QUOTE_NONNUMERIC

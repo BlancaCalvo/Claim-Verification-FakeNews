@@ -242,7 +242,7 @@ def main():
     # layer_indexes = [int(x) for x in args.layers.split(",")]
 
     tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
-
+    print(args.input_file)
     examples = read_examples(args.input_file)
 
     features = convert_examples_to_features(
@@ -315,10 +315,12 @@ def main():
             else:
                 instances[index]['evidences'] = [embedding]
         else:
+            print(instances[index]['label'])
+            print(label)
             assert instances[index]['label'] == label
-            #if 'evidences' not in instances[index]:
-            #    instances[index]['evidences'] = []
-            #instances[index]['evidences'].append(embedding)
+            if 'evidences' not in instances[index]:
+                instances[index]['evidences'] = []
+            instances[index]['evidences'].append(embedding)
 
     fout = open(args.output_file, 'w')
     for instance in instances.items():

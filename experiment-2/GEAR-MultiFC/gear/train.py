@@ -35,7 +35,7 @@ torch.manual_seed(args.seed)
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
-dir_path = '../outputs/gear-%devi-%dlayer-%s-%dseed-001' % (args.evi_num, args.layer, args.pool, args.seed)
+dir_path = 'experiment-2/GEAR-MultiFC/outputs/gear-%devi-%dlayer-%s-%dseed-001/' % (args.evi_num, args.layer, args.pool, args.seed)
 if not os.path.exists(dir_path):
     os.mkdir(dir_path)
 
@@ -45,8 +45,8 @@ if os.path.exists(dir_path + '/results.txt'):
 else:
     print(dir_path)
 
-train_features, train_labels, train_claims = load_bert_features_claim('../data/gear/gear-train-set-0_001-features.tsv', args.evi_num)
-dev_features, dev_labels, dev_claims = load_bert_features_claim('../data/gear/gear-dev-set-0_001-features.tsv', args.evi_num)
+train_features, train_labels, train_claims = load_bert_features_claim('data/MultiFC/train_data-features.tsv', args.evi_num)
+dev_features, dev_labels, dev_claims = load_bert_features_claim('data/MultiFC/dev_data-features.tsv', args.evi_num)
 
 feature_num = train_features[0].shape[1]
 model = GEAR(nfeat=feature_num, nins=args.evi_num, nclass=3, nlayer=args.layer, pool=args.pool) #central line, study GEAR in models script
