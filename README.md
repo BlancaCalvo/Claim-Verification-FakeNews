@@ -13,11 +13,11 @@ Experiment 2: es el repositorio de GEAR https://github.com/thunlp/GEAR . La tran
 
 Transformar el dataset:
 
-`
+```
 python data/MultiFC/transform/change_format.py
 
 python data/MultiFC/transform/multifc_to_gear.py
-`
+```
 
 Extraer los features:
 
