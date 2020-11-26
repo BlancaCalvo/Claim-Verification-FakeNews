@@ -21,7 +21,7 @@ python data/MultiFC/transform/multifc_to_gear.py
 
 Extraer los features:
 
-`
+```
 chmod +x experiment-2/GEAR-MultiFC/feature_extractor/*.sh
 
 experiment-2/GEAR-MultiFC/feature_extractor/dev_extractor.sh
@@ -29,20 +29,20 @@ experiment-2/GEAR-MultiFC/feature_extractor/dev_extractor.sh
 experiment-2/GEAR-MultiFC/feature_extractor/train_extractor.sh
 
 experiment-2/GEAR-MultiFC/feature_extractor/test_extractor.sh
-`
+```
 
 Train:
 
-`
+```
 CUDA_VISIBLE_DEVICES=0 python experiment-2/GEAR-MultiFC/gear/train.py 
-`
+```
 
 Test:
 
-`
+```
 python experiment-2/GEAR-MultiFC/gear/test.py 
 
 python experiment-2/GEAR-MultiFC/gear/evaluation.py 
-`
+```
 
 Os faltaran los datos de MultiFC, que se pueden descargar aquí. https://competitions.codalab.org/competitions/21163 
