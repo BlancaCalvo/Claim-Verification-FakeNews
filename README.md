@@ -12,24 +12,32 @@ Pero os faltará tanto la base de datos de FEVER como el sampled_data.
 Experiment 2: es el repositorio de GEAR https://github.com/thunlp/GEAR . La transformación del dataset está en data/MultiFC/tranform/, que es básicamente agrupar los 165 labels de MultiFC en las tres categorías de FEVER y guardar los datasets en el mismo formato para poder usar GEAR con MultiFC. He cambiado también los scripts de evaluación del modelo, y se encuentra en GEAR-MultiFC/my_scripts. 
 
 Transformar el dataset:
+
 `
 python data/MultiFC/transform/change_format.py
 python data/MultiFC/transform/multifc_to_gear.py
 `
+
 Extraer los features:
+
 `
 chmod +x experiment-2/GEAR-MultiFC/feature_extractor/*.sh
 experiment-2/GEAR-MultiFC/feature_extractor/dev_extractor.sh
 experiment-2/GEAR-MultiFC/feature_extractor/train_extractor.sh
 experiment-2/GEAR-MultiFC/feature_extractor/test_extractor.sh
 `
+
 Train:
+
 `
 CUDA_VISIBLE_DEVICES=0 python experiment-2/GEAR-MultiFC/gear/train.py 
 `
+
 Test:
+
 `
 python experiment-2/GEAR-MultiFC/gear/test.py 
 python experiment-2/GEAR-MultiFC/gear/evaluation.py 
 `
+
 Os faltaran los datos de MultiFC, que se pueden descargar aquí. https://competitions.codalab.org/competitions/21163 
