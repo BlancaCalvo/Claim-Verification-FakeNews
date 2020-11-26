@@ -5,7 +5,9 @@ He hecho el repositorio que hemos dicho. Contiene el “experimento-1” (i.e. m
 Experiment 1: es principalmente una copia del respositorio del baseline https://github.com/sheffieldnlp/fever-naacl-2018 , el MLP. 
 Mis cambios están en scripts/rte/mlp/train_mlp, donde he añadido el tag —features para poder cambiar de TFIDF a BERT. TFIDF era la representación original y BERT la que yo he añadido. Los scripts de mi añadido están en my_scripts/BERT* y new_features/extractor, que es un script de GEAR modificado. Así que para entrenar con los features de BERT el comando es:
 
+`
 PYTHONPATH=experiment-1/MLP_new/ python experiment-1/MLP_new/scripts/rte/mlp/train_mlp.py data/fever/fever.db experiment-1/MLP_new/sampled_data/train.ns.pages.p1.jsonl experiment-1/MLP_new/sampled_data/dev.ns.pages.p1.jsonl --model BERT_concat_model --sentence true --features BERT
+`
 
 Pero os faltará tanto la base de datos de FEVER como el sampled_data. 
 
