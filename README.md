@@ -14,9 +14,10 @@ Experiment 2: es el repositorio de GEAR https://github.com/thunlp/GEAR . La tran
 Transformar el dataset:
 
 ```
-python data/MultiFC/transform/change_format.py
-
-python data/MultiFC/transform/multifc_to_gear.py
+python data/MultiFC/transform/change_format.py data/MultiFC/dev.tsv --output data/MultiFC/changed_dev.tsv
+python data/MultiFC/transform/multifc_to_gear.py data/MultiFC/changed_dev.tsv --output dev_data.tsv
+python data/MultiFC/transform/change_format.py data/MultiFC/train.tsv --output data/MultiFC/changed_train.tsv
+python data/MultiFC/transform/multifc_to_gear.py data/MultiFC/changed_train.tsv --output train_data.tsv
 ```
 
 Extraer los features:
@@ -27,8 +28,6 @@ chmod +x experiment-2/GEAR-MultiFC/feature_extractor/*.sh
 experiment-2/GEAR-MultiFC/feature_extractor/dev_extractor.sh
 
 experiment-2/GEAR-MultiFC/feature_extractor/train_extractor.sh
-
-experiment-2/GEAR-MultiFC/feature_extractor/test_extractor.sh
 ```
 
 Train:
