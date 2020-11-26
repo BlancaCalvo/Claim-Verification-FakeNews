@@ -1,10 +1,15 @@
 import pandas as pd
 import csv
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('dataset', type=str, help='The path to the dataset to be transformed')
+parser.add_argument('--output', type=str, help='The path to the resulting dataset')
+args = parser.parse_args()
 
 header_list = ['id', 'claim', 'original_label', 'url', 'reason_label', 'categories', 'speaker', 'factchecker', 'tags', 'article_title', 'publication_date', 'claim_date', 'entities']
 
-
-data = pd.read_csv('data/MultiFC/train_trial.tsv', sep='\t', names=header_list)
+data = pd.read_csv(args.dataset, sep='\t', names=header_list)
 print(len(data))
 
 
@@ -63,18 +68,5 @@ data = data[data.columns[new_order]]
 print(data.head())
 print(data.groupby('label').count()['id'])
 
-#data = data[~data.claim.str.contains("XYZ")]
-#data = data.values.tolist()
-
-#with open('output.tsv', 'wt') as out_file:
-#	tsv_writer = csv.writer(out_file, delimiter='\t')
-#	for line in data:
-#		print(line[1])
-#		tsv_writer.writerow(line)
-
-#data = data.replace('http.*\r [0-9].*[\r [0-9].*]*\"', '\"', regex=True)
-
-with open('data/MultiFC/train_data.tsv', mode='w', newline='\n') as f:
+with open(args.output, mode='w', newline='\n') as f:
 	data.to_csv(f, sep='\t', header=False, index=False, line_terminator='\n', encoding='utf-8')
-
-#data.to_csv('data/MultiFC/train_data.tsv', sep='\t', header=False, line_terminator='\n') #, quotechar='"', quoting=csv.QUOTE_NONNUMERIC

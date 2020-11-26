@@ -1,7 +1,13 @@
 import csv
+import argparse
 
-with open('data/MultiFC/train.tsv', mode='r', newline='\r\n') as f:
-	with open('data/MultiFC/train_trial.tsv', mode='w', newline='\n') as t:
+parser = argparse.ArgumentParser()
+parser.add_argument('dataset', type=str, help='The path to the dataset to be transformed')
+parser.add_argument('--output', type=str, help='The path to the resulting dataset')
+args = parser.parse_args()
+
+with open(args.dataset, mode='r', newline='\r\n') as f:
+	with open(args.output, mode='w', newline='\n') as t:
 		data = f.read()
 		data = data.split('\r\n')
 		writer = csv.writer(t, delimiter='\t', quoting=csv.QUOTE_MINIMAL)
