@@ -15,6 +15,7 @@ Transformar el dataset:
 
 `
 python data/MultiFC/transform/change_format.py
+
 python data/MultiFC/transform/multifc_to_gear.py
 `
 
@@ -22,8 +23,11 @@ Extraer los features:
 
 `
 chmod +x experiment-2/GEAR-MultiFC/feature_extractor/*.sh
+
 experiment-2/GEAR-MultiFC/feature_extractor/dev_extractor.sh
+
 experiment-2/GEAR-MultiFC/feature_extractor/train_extractor.sh
+
 experiment-2/GEAR-MultiFC/feature_extractor/test_extractor.sh
 `
 
@@ -37,6 +41,7 @@ Test:
 
 `
 python experiment-2/GEAR-MultiFC/gear/test.py 
+
 python experiment-2/GEAR-MultiFC/gear/evaluation.py 
 `
 
