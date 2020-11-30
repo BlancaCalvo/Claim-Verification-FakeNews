@@ -37,8 +37,8 @@ CUDA_VISIBLE_DEVICES=0 python experiment-2/GEAR-MultiFC/gear/train.py
 Test:
 
 ```
-python experiment-2/GEAR-MultiFC/gear/test.py 
-python experiment-2/GEAR-MultiFC/gear/evaluation.py 
+python experiment-2/GEAR-MultiFC/my_scripts/test.py 
+python experiment-2/GEAR-MultiFC/my_scripts/evaluation.py 
 ```
 
 Os faltaran los datos de MultiFC, que se pueden descargar aquí. https://competitions.codalab.org/competitions/21163 
