@@ -44,10 +44,10 @@ def import_snippets(id_claim):
 		snippets = pd.read_csv('data/MultiFC/snippets/' + id_claim, sep='\t', names=header_snippets)
 		found = snippets['snippet'].to_list()
 		for f in found:
-			f=f.replace('\r\n', ' ')
-			f = f.replace('\n', ' ')
-			f = f.replace('\r', ' ')
-			f = f.replace('\t', '')
+			#f=f.replace('\r\n', ' ')
+			#f = f.replace('\n', ' ')
+			#f = f.replace('\r', ' ')
+			#f = f.replace('\t', '')
 			evidences.append(str(f))
 	except:
 		evidences = ['','','','','']
