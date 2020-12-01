@@ -1,8 +1,11 @@
 
 Create the corpus: 
 
-python data/MultiFC/transform/change_format.py
-python data/MultiFC/transform/multifc_to_gear.py
+python data/MultiFC/transform/change_format_snippets.py data/MultiFC/snippets/ --output_dir data/MultiFC/new_snippets/
+python data/MultiFC/transform/change_format.py data/MultiFC/dev.tsv --output data/MultiFC/changed_dev.tsv
+python data/MultiFC/transform/multifc_to_gear.py data/MultiFC/changed_dev.tsv --output data/MultiFC/dev_data.tsv
+python data/MultiFC/transform/change_format.py data/MultiFC/train.tsv --output data/MultiFC/changed_train.tsv
+python data/MultiFC/transform/multifc_to_gear.py data/MultiFC/changed_train.tsv --output data/MultiFC/train_data.tsv
 
 Extract the features: 
 
@@ -16,4 +19,25 @@ Train
 CUDA_VISIBLE_DEVICES=0 python experiment-2/GEAR-MultiFC/gear/train.py 
 python experiment-2/GEAR-MultiFC/gear/test.py 
 python experiment-2/GEAR-MultiFC/gear/evaluation.py 
+local:
+python experiment-2/GEAR-MultiFC/my_scripts/test.py 
+python experiment-2/GEAR-MultiFC/my_scripts/evaluation.py 
+
+JUST TEXTS WITH EVIDENCES:
+
+python data/MultiFC/transform/dataset_explore.py data/MultiFC/changed_dev.tsv --output evidence_dev.tsv
+python data/MultiFC/transform/dataset_explore.py data/MultiFC/changed_train.tsv --output evidence_train.tsv
+
+python data/MultiFC/transform/evidence_multi_to_gear.py data/MultiFC/evidence_dev.tsv --output data/MultiFC/evidence_dev_data.tsv
+python data/MultiFC/transform/evidence_multi_to_gear.py data/MultiFC/evidence_train.tsv --output data/MultiFC/evidence_train_data.tsv
+
+chmod +x experiment-2/GEAR-MultiFC/evidence_stuff/feature_extractor/*.sh
+experiment-2/GEAR-MultiFC/evidence_stuff/feature_extractor/dev_extractor.sh
+experiment-2/GEAR-MultiFC/evidence_stuff/feature_extractor/train_extractor.sh
+experiment-2/GEAR-MultiFC/evidence_stuff/feature_extractor/test_extractor.sh
+
+CUDA_VISIBLE_DEVICES=1 python experiment-2/GEAR-MultiFC/evidence_stuff/gear/train.py 
+python experiment-2/GEAR-MultiFC/evidence_stuff/gear/test.py 
+python experiment-2/GEAR-MultiFC/evidence_stuff/gear/evaluation.py 
+
 
