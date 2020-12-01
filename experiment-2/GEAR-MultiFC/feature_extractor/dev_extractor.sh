@@ -1,4 +1,4 @@
-CUDA_VISIBLE_DEVICES=0 PYTHONPATH=experiment-2/GEAR-MultiFC/feature_extractor/ python experiment-2/GEAR-MultiFC/feature_extractor/extractor.py \
+CUDA_VISIBLE_DEVICES=1 PYTHONPATH=experiment-2/GEAR-MultiFC/feature_extractor/ python experiment-2/GEAR-MultiFC/feature_extractor/extractor.py \
     --input_file data/MultiFC/dev_data.tsv \
     --output_file data/MultiFC/dev_data-features.tsv \
     --bert_model experiment-2/GEAR-MultiFC/pretrained_models/BERT-Pair/ \

@@ -35,7 +35,7 @@ torch.manual_seed(args.seed)
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
-dir_path = 'experiment-2/GEAR-MultiFC/outputs/gear-%devi-%dlayer-%s-%dseed-001/' % (args.evi_num, args.layer, args.pool, args.seed)
+dir_path = 'experiment-2/GEAR-MultiFC/outputs/gear-%devi-%dlayer-%s-%dseed-001-2/' % (args.evi_num, args.layer, args.pool, args.seed)
 if not os.path.exists(dir_path):
     os.mkdir(dir_path)
 
