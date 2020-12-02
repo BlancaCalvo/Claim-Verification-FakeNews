@@ -1,4 +1,4 @@
-## GEAR
+## GEAR-MultiFC
 Bsed on the code of the paper "[GEAR: Graph-based Evidence Aggregating and Reasoning for Fact Verification](GEAR.pdf)".
 
 ## Requirements:
@@ -66,16 +66,4 @@ python experiment-2/GEAR-MultiFC/my_scripts/evaluation.py
 ## Feature extraction, training and testing with new evidences
 ```
 bash experiment-2/GEAR-MultiFC/evidence_stuff/run_all.sh
-```
-
-
-## Citation:
-
-```
-@inproceedings{zhou2019gear,
-  title={GEAR: Graph-based Evidence Aggregating and Reasoning for Fact Verification},
-  author={Zhou, Jie and Han, Xu and Yang, Cheng and Liu, Zhiyuan and Wang, Lifeng and Li, Changcheng and Sun, Maosong},
-  booktitle={Proceedings of ACL 2019},
-  year={2019}
-}
 ```
