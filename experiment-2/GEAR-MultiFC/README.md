@@ -1,6 +1,5 @@
 ## GEAR
-
-Source code and dataset for the ACL 2019 paper "[GEAR: Graph-based Evidence Aggregating and Reasoning for Fact Verification](GEAR.pdf)".
+Bsed on the code of the paper "[GEAR: Graph-based Evidence Aggregating and Reasoning for Fact Verification](GEAR.pdf)".
 
 ## Requirements:
 Please make sure your environment includes:
@@ -12,34 +11,28 @@ Then, run the command:
 ```
 pip install -r requirements.txt
 ```
+## Transformation of the MultiFC dataset
+The dataset can be downloaded in: https://competitions.codalab.org/competitions/21163 
 
-## Evidence Extraction
-We use the codes from [Athene UKP TU Darmstadt](https://github.com/UKPLab/fever-2018-team-athene) in the document retrieval and sentence selection steps. 
-
-Our evidence extraction results can be found in [Tsinghua Cloud](https://cloud.tsinghua.edu.cn/d/1499a062447f4a3d8de7/) or [Google Cloud](https://drive.google.com/drive/folders/1y-5VdcrqEEMtU8zIGcREacN1JCHqSp5K).
-
-Download these files and put them in the ``data/retrieved/`` folder. Then the folder will look like
-
+Clean the dataset:
 ```
-data/retrieved/
-    train.ensembles.s10.jsonl
-    dev.ensembles.s10.jsonl
-    test.ensembles.s10.jsonl
+python data/MultiFC/transform/change_format_snippets.py data/MultiFC/snippets/ --output_dir data/MultiFC/new_snippets/
+python data/MultiFC/transform/change_format.py data/MultiFC/dev.tsv --output data/MultiFC/changed_dev.tsv
+python data/MultiFC/transform/change_format.py data/MultiFC/train.tsv --output data/MultiFC/changed_train.tsv
 ```
 
-## Data Preparation
+Map the categories, add the evidence and put it in GEAR format. 
+
+Snippets given by MultiFC:
 ```
-# Download the fever database
-wget -O data/fever/fever.db https://s3-eu-west-1.amazonaws.com/fever.public/wiki_index/fever.db
+python data/MultiFC/transform/multifc_to_gear.py data/MultiFC/changed_dev.tsv --output data/MultiFC/dev_data.tsv
+python data/MultiFC/transform/multifc_to_gear.py data/MultiFC/changed_train.tsv --output data/MultiFC/train_data.tsv
+```
 
-# Extract the evidence from database
-cd scripts/
-python retrieval_to_bert_input.py
-
-# Build the datasets for gear
-python build_gear_input_set.py
-
-cd ..
+Reasons to label + snippets for NOTENOUGHINFO:
+```
+python data/MultiFC/transform/evidence_multi_to_gear.py data/MultiFC/changed_dev.tsv --output data/MultiFC/evidence_dev_data.tsv
+python data/MultiFC/transform/evidence_multi_to_gear.py data/MultiFC/changed_train.tsv --output data/MultiFC/evidence_train_data.tsv
 ```
 
 ## Feature Extraction
@@ -55,38 +48,28 @@ pretrained_models/BERT-Pair/
 
 Then run the feature extraction scripts.
 ```
-cd feature_extractor/
-chmod +x *.sh
-./train_extractor.sh
-./dev_extractor.sh
-./test_extractor.sh
-cd ..
+chmod +x experiment-2/GEAR-MultiFC/feature_extractor/*.sh
+experiment-2/GEAR-MultiFC/feature_extractor/dev_extractor.sh
+experiment-2/GEAR-MultiFC/feature_extractor/train_extractor.sh
 ```
 
-## GEAR Training
+## GEAR Training and Testing
 ```
-cd gear
-CUDA_VISIBLE_DEVICES=0 python train.py
-cd ..
-```
-
-## GEAR Testing
-```
-cd gear
-CUDA_VISIBLE_DEVICES=0 python test.py
-cd ..
+CUDA_VISIBLE_DEVICES=0 python experiment-2/GEAR-MultiFC/gear/train.py 
+python experiment-2/GEAR-MultiFC/gear/test.py 
+python experiment-2/GEAR-MultiFC/gear/evaluation.py 
+local:
+python experiment-2/GEAR-MultiFC/my_scripts/test.py 
+python experiment-2/GEAR-MultiFC/my_scripts/evaluation.py 
 ```
 
-## Results Gathering
+## Feature extraction, training and testing with new evidences
 ```
-cd gear
-python results_scorer.py
-cd ..
+bash experiment-2/GEAR-MultiFC/evidence_stuff/run_all.sh
 ```
 
-## Cite
 
-If you use the code, please cite our paper:
+## Citation:
 
 ```
 @inproceedings{zhou2019gear,
