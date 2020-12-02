@@ -7,7 +7,7 @@ import re
 ENCODING = 'utf-8'
 
 def get_predicted_label(items):
-    labels = ['SUPPORTS', 'REFUTES', 'NOT ENOUGH INFO']
+    labels = ['SUPPORTS', 'REFUTES', 'NOTENOUGHINFO']
     #print(labels[np.argmax(np.array(items))])
     return labels[np.argmax(np.array(items))]
 

@@ -39,11 +39,11 @@ dir_path = 'experiment-2/GEAR-MultiFC/outputs/gear-%devi-%dlayer-%s-%dseed-001-e
 if not os.path.exists(dir_path):
     os.mkdir(dir_path)
 
-if os.path.exists(dir_path + '/results.txt'):
-    print(dir_path + ' results exists!')
-    exit(0)
-else:
-    print(dir_path)
+#if os.path.exists(dir_path + '/results.txt'):
+#    print(dir_path + ' results exists!')
+#    exit(0)
+#else:
+#    print(dir_path)
 
 train_features, train_labels, train_claims = load_bert_features_claim('data/MultiFC/evidence_train_data-features.tsv', args.evi_num)
 dev_features, dev_labels, dev_claims = load_bert_features_claim('data/MultiFC/evidence_dev_data-features.tsv', args.evi_num)
