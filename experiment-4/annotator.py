@@ -46,14 +46,15 @@ def main():
     with open('Claim-Verification-FakeNews/data/annotations/'+ args.type +'.csv', 'a+', encoding='utf-8') as f:
         writer = csv.writer(f)
         if os.path.getsize('Claim-Verification-FakeNews/data/annotations/'+ args.type +'.csv') == 0:
-            fieldnames = ['id', 'complexity', 'time', 'math', 'dataset']
+            fieldnames = ['id', 'claim_complexity', 'time', 'time_complexity', 'math', 'dataset']
             writer.writerow(fieldnames)
         for instance in sampling:
             print(instance['claim'])
-            complexity = input('Complexity: ')
+            complexity = input('Claim Complexity: ')
             time = input('Time: ')
+            time_complexity = input('Time Complexity: ')
             math = input('Math: ')
-            writer.writerow([instance['id'], complexity, time, math, args.type])
+            writer.writerow([instance['id'], complexity, time,time_complexity, math, args.type])
             f.flush()
 
 main()
