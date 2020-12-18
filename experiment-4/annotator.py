@@ -5,7 +5,7 @@ import csv
 import random
 import os
 
-def load_fever(file):
+def load_fever(file): #import jsonl
     list_jsons=[]
     with open(file, 'r') as json_file:
         json_list = list(json_file)
@@ -14,13 +14,13 @@ def load_fever(file):
         list_jsons.append(result)
     return list_jsons
 
-def load_hover(dataset):
+def load_hover(dataset): #import json
     data = json.load(open(dataset))
     for d in data:
         d['id'] = d.pop('uid')
     return data
 
-def load_multifc(dataset):
+def load_multifc(dataset): #import tsv
     with open(dataset) as f:
         reader = csv.reader(f, skipinitialspace=True, delimiter='\t')
         header = ['id', 'label', 'claim', 'ev1', 'ev2', 'ev3', 'ev4', 'ev5']
