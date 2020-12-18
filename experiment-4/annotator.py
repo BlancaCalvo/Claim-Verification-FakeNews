@@ -47,6 +47,7 @@ def main():
         writer = csv.writer(f)
         if os.path.getsize('Claim-Verification-FakeNews/data/annotations/'+ args.type +'.csv') == 0:
             fieldnames = ['id', 'claim_complexity', 'time', 'time_complexity', 'math', 'dataset']
+            print(fieldnames)
             writer.writerow(fieldnames)
         for instance in sampling:
             print(instance['claim'])
