@@ -1,0 +1,60 @@
+---
+title: "Stats of Corpora"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+```
+
+```{r load}
+fever<- read.csv("data/annotations/FEVER.csv", header = TRUE)
+hover<- read.csv("data/annotations/Hover.csv", header = TRUE)
+multifc<- read.csv("data/annotations/MultiFC.csv", header = TRUE)
+```
+
+```{r clean}
+fever<-fever %>% filter(claim_complexity!='x') %>% head(100)
+hover<-hover %>% filter(claim_complexity!='x') %>% head(100)
+multifc<-multifc %>% filter(claim_complexity!='x')
+dataset <- rbind(fever, hover)
+dataset <- rbind(dataset, multifc)
+```
+
+```{r stats}
+dataset %>%
+  ggplot(aes(x=as.factor(claim_complexity), fill=dataset)) +
+    geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity', stat='count') +
+    labs(fill="")+ 
+    facet_wrap(~dataset)+
+  ylab("Percentage")+
+  xlab("Claim complexity")
+
+dataset %>%
+  ggplot(aes(x=as.factor(time), fill=dataset)) +
+    geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity', stat='count') +
+    labs(fill="")+ 
+    facet_wrap(~dataset)+
+  ylab("Percentage")+
+  xlab("Time reasoning")
+
+dataset %>%
+  ggplot(aes(x=as.factor(time_complexity), fill=dataset)) +
+    geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity', stat='count') +
+    labs(fill="")+ 
+    facet_wrap(~dataset)+
+  ylab("Percentage")+
+  xlab("Time complexity")
+
+dataset %>%
+  ggplot(aes(x=as.factor(math), fill=dataset)) +
+    geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity', stat='count') +
+    labs(fill="")+ 
+    facet_wrap(~dataset)+
+  ylab("Percentage")+
+  xlab("Mathematical resoning")
+```
+
+
