@@ -24,37 +24,45 @@ dataset <- rbind(dataset, multifc)
 ```
 
 ```{r stats}
-dataset %>%
+g<-dataset %>%
   ggplot(aes(x=as.factor(claim_complexity), fill=dataset)) +
     geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity', stat='count') +
     labs(fill="")+ 
     facet_wrap(~dataset)+
   ylab("Percentage")+
   xlab("Claim complexity")
+print(g)
+ggsave("~/Claim-Verification-FakeNews/visuals/complexity.jpg", width = 10, height = 4.5, dpi = 120, device = "jpeg")
 
-dataset %>%
+g<-dataset %>%
   ggplot(aes(x=as.factor(time), fill=dataset)) +
     geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity', stat='count') +
     labs(fill="")+ 
     facet_wrap(~dataset)+
   ylab("Percentage")+
   xlab("Time reasoning")
+print(g)
+ggsave("~/Claim-Verification-FakeNews/visuals/time.jpg", width = 10, height = 4.5, dpi = 120, device = "jpeg")
 
-dataset %>%
+g<-dataset %>%
   ggplot(aes(x=as.factor(time_complexity), fill=dataset)) +
     geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity', stat='count') +
     labs(fill="")+ 
     facet_wrap(~dataset)+
   ylab("Percentage")+
   xlab("Time complexity")
+print(g)
+ggsave("~/Claim-Verification-FakeNews/visuals/time_complexity.jpg", width = 10, height = 4.5, dpi = 120, device = "jpeg")
 
-dataset %>%
+g<-dataset %>%
   ggplot(aes(x=as.factor(math), fill=dataset)) +
     geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity', stat='count') +
     labs(fill="")+ 
     facet_wrap(~dataset)+
   ylab("Percentage")+
   xlab("Mathematical resoning")
+print(g)
+ggsave("~/Claim-Verification-FakeNews/visuals/math.jpg", width = 10, height = 4.5, dpi = 120, device = "jpeg")
 ```
 
 

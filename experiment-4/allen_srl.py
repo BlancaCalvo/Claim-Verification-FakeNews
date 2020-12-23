@@ -24,7 +24,7 @@ def main():
     parser.add_argument('--output-file', type=argparse.FileType('w'), help='path to output file')
     parser.add_argument('--batch-size', type=int, default=1, help='The batch size to use for processing')
     args = parser.parse_args()
-    predictor = Predictor.from_path("https://s3-us-west-2.amazonaws.com/allennlp/models/srl-model-2018.05.25.tar.gz")
+    predictor = Predictor.from_path("https://storage.googleapis.com/allennlp-public-models/bert-base-srl-2020.11.19.tar.gz")
     output_file = None
     print_to_console = False
 
