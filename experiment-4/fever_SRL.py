@@ -1,7 +1,9 @@
 
 from allen_srl import run_predictor_batch
 from allennlp.predictors import Predictor
+
 import re
+import itertools
 
 class InputExample(object):
 
@@ -9,8 +11,8 @@ class InputExample(object):
         self.unique_id = unique_id
         self.text_a = text_a
         self.text_b = text_b
-        #print(text_a)
-        #print(text_b)
+        print(unique_id)
+        print('[CLS]', text_a, '[SEP]', text_b, '[SEP]')
         self.label = label
         self.index = index
         self.is_claim = is_claim
@@ -31,24 +33,42 @@ def read_examples(input_file, predictor):
             evidences = line[3:]
 
             prediction = run_predictor_batch([{'sentence':claim}], predictor)
-
             for proposition in prediction[0]['verbs']:
+                all_nodes = []
                 sr_parts = re.findall(r'\[.*?\]', proposition['description'])
                 for part in sr_parts:
-                    role, argument = part.replace('[','').replace(']','').split(': ')
-                    if role != 'V':
-                        examples.append(InputExample(unique_id=unique_id, text_a=role+' '+proposition['verb'], text_b=argument, label=label, index=index,
-                                     is_claim=True))
-                        unique_id += 1
+                    #role, argument = part.replace('[','').replace(']','').split(': ', 1)
+                    node = part.replace('[', '').replace(']', '').replace(':', '')
+                    all_nodes.append(node)
+                    #if role != 'V':
+                    #    examples.append(InputExample(unique_id=unique_id, text_a=role+' '+proposition['verb'], text_b=argument, label=label, index=index,
+                    #                 is_claim=True))
+                    #    unique_id += 1
+                for pair in itertools.combinations(all_nodes, 2):
+                    examples.append(InputExample(unique_id=unique_id, text_a=pair[0], text_b=pair[1],
+                                 label=label, index=index,is_claim=True))
+                    unique_id += 1
 
-            #examples.append(InputExample(unique_id=unique_id, text_a=claim, text_b=None, label=label, index=index, is_claim=True))
-            #unique_id += 1
 
             for evidence in evidences:
-                # examples.append(InputExample(unique_id=unique_id, text_a=evidence, text_b=None, label=label, index=index, is_claim=False))
-                examples.append(InputExample(unique_id=unique_id, text_a=evidence, text_b=claim, label=label, index=index, is_claim=False))
-                # examples.append(InputExample(unique_id=unique_id, text_a=claim, text_b=evidence, label=label, index=index, is_claim=False))
-                unique_id += 1
+                evidence = re.sub(r'\.[a-zA-Z0-9 #\-–:]*$', '', evidence) # instead of this line I should change the build_gear_input_set.py script
+                prediction = run_predictor_batch([{'sentence': evidence}], predictor)
+
+                for proposition in prediction[0]['verbs']:
+                    all_nodes = []
+                    sr_parts = re.findall(r'\[.*?\]', proposition['description'])
+                    for part in sr_parts:
+                        node = part.replace('[', '').replace(']', '').replace(':', '')
+                        all_nodes.append(node)
+                        #role, argument = part.replace('[', '').replace(']', '').split(': ', 1)
+                        #if role != 'V':
+                        #    examples.append(InputExample(unique_id=unique_id, text_a=role + ' ' + proposition['verb'], text_b=argument, label=label, index=index,
+                        #                                 is_claim=False))
+                        #    unique_id += 1
+                    for pair in itertools.combinations(all_nodes, 2):
+                        examples.append(InputExample(unique_id=unique_id, text_a=pair[0], text_b=pair[1],
+                                 label=label, index=index,is_claim=False))
+                        unique_id += 1
             break
     return examples
 
