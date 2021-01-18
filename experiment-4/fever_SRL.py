@@ -5,6 +5,7 @@ from allennlp.predictors import Predictor
 import re
 import itertools
 import logging
+import argparse
 
 from extractor import InputExample
 from extractor import convert_examples_to_features
@@ -76,10 +77,20 @@ def read_examples_SRL(input_file, predictor):
             #break
     return examples
 
+# arguments
+
+parser = argparse.ArgumentParser()
+
+## Required parameters
+parser.add_argument("--input_file", default=None, type=str, required=True)
+parser.add_argument("--output_file", default=None, type=str, required=True)
+
+args = parser.parse_args()
+
 # load the fever dataset with evidences (the GEAR one I think)
 predictor = Predictor.from_path("https://storage.googleapis.com/allennlp-public-models/bert-base-srl-2020.11.19.tar.gz")
 
-examples = read_examples_SRL('data/gear/trial.tsv', predictor)
+examples = read_examples_SRL(args.input_file, predictor)
 
 # for each claim do SRL parsing and structure the claim so it looks like
 #[CLS] became [SEP] Colin Kaepernick [SEP]
@@ -89,7 +100,7 @@ examples = read_examples_SRL('data/gear/trial.tsv', predictor)
 #[CLS] Colin Kaepernick [SEP] during the 49ers 63rd season in the National Football League [SEP]
 #[CLS]  a starting quarterback  [SEP] during the 49ers 63rd season in the National Football League [SEP]
 
-# FUTURE OPTION: include roles and adapt it to BERT format so it can be used for fine-tuning with the new vocabulary ver arg arg-tmp arg-loc
+# FUTURE OPTION: include roles so it can be used for fine-tuning with the new vocabulary ver arg arg-tmp arg-loc
 
 tokenizer = BertTokenizer.from_pretrained('bert-base-cased', do_lower_case=False)
 
@@ -99,7 +110,7 @@ features = convert_examples_to_features(
 local_rank = -1 #revise this later
 no_cuda = True
 batch_size = 512
-output_file = 'experiment-4/features/features_trial.tsv'
+output_file = args.output_file #'experiment-4/features/features_trial.tsv'
 
 if local_rank == -1 or no_cuda:
     device = torch.device("cuda" if torch.cuda.is_available() and not no_cuda else "cpu")
