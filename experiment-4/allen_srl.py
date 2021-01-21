@@ -1,10 +1,12 @@
+#requirements set were right in 13/1/2021
+
 from allennlp.predictors import Predictor
 from allennlp.models.archival import load_archive
 from contextlib import ExitStack
 import argparse
 import json
 
-def run_predictor_batch(batch_data, predictor, output_file, print_to_console):
+def run_predictor_batch(batch_data, predictor, output_file=False, print_to_console=False):
     if len(batch_data) == 1:
         result = predictor.predict_json(batch_data[0])
         results = [result]
@@ -18,6 +20,7 @@ def run_predictor_batch(batch_data, predictor, output_file, print_to_console):
             print("batch data prediction: ", string_output)
         if output_file:
             output_file.write(string_output)
+    return results
 
 def main():
     parser = argparse.ArgumentParser()
