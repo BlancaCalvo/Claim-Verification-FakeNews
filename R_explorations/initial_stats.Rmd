@@ -25,6 +25,7 @@ dataset <- rbind(dataset, multifc)
 
 ```{r stats}
 g<-dataset %>%
+  filter(dataset != 'Hover') %>%
   ggplot(aes(x=as.factor(claim_complexity), fill=dataset)) +
     geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity', stat='count') +
     labs(fill="")+ 
@@ -32,7 +33,7 @@ g<-dataset %>%
   ylab("Percentage")+
   xlab("Claim complexity")
 print(g)
-ggsave("~/Claim-Verification-FakeNews/visuals/complexity.jpg", width = 10, height = 4.5, dpi = 120, device = "jpeg")
+ggsave("~/Claim-Verification-FakeNews/visuals/complexity_nohover.jpg", width = 10, height = 4.5, dpi = 120, device = "jpeg")
 
 g<-dataset %>%
   ggplot(aes(x=as.factor(time), fill=dataset)) +
