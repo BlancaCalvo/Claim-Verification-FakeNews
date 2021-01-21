@@ -37,7 +37,10 @@ def read_examples_SRL(input_file, predictor):
             claim = line[2]
             evidences = line[3:]
 
-            prediction = run_predictor_batch([{'sentence':claim}], predictor)
+            try:
+                prediction = run_predictor_batch([{'sentence':claim}], predictor)
+            except:
+                prediction = [{'verbs':''}]
             for proposition in prediction[0]['verbs']:
                 all_nodes = []
                 sr_parts = re.findall(r'\[.*?\]', proposition['description'])
@@ -57,14 +60,21 @@ def read_examples_SRL(input_file, predictor):
 
             for evidence in evidences:
                 evidence = re.sub(r'\.[a-zA-Z0-9 #\-–:]*$', '', evidence) # instead of this line I should change the build_gear_input_set.py script
-                prediction = run_predictor_batch([{'sentence': evidence}], predictor)
+                try:
+                    prediction = run_predictor_batch([{'sentence': evidence}], predictor)
+                except:
+                    prediction = [{'verbs': ''}]
 
                 for proposition in prediction[0]['verbs']:
                     all_nodes = []
                     sr_parts = re.findall(r'\[.*?\]', proposition['description'])
                     for part in sr_parts:
                         #node = part.replace('[', '').replace(']', '').replace(':', '')
-                        role, argument = part.replace('[', '').replace(']', '').split(': ', 1)
+                        try:
+                            role, argument = part.replace('[', '').replace(']', '').split(': ', 1)
+                        except:
+                            print('no role')
+                            break
                         all_nodes.append(argument)
                         #if role != 'V':
                         #    examples.append(InputExample(unique_id=unique_id, text_a=role + ' ' + proposition['verb'], text_b=argument, label=label, index=index,
