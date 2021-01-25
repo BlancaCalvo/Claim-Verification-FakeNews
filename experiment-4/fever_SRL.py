@@ -25,10 +25,13 @@ logger = logging.getLogger(__name__)
 def read_examples_SRL(input_file, predictor):
     """Read a list of `InputExample`s from an input file."""
     examples = []
-    unique_id = 0
+    unique_id = line_n = 0
+    num_lines = sum(1 for line in open(input_file))
     with open(input_file, "r", encoding='utf-8') as reader:
         while True:
             line = reader.readline()
+            line_n += 1
+            logger.info("Parsing input with SRL: {}/{}".format(line_n, num_lines))
             if not line:
                 break
             line = line.strip().split('\t')
