@@ -21,11 +21,13 @@ def load_bert_features_claim(file, size):
 
     with open(file, 'rb') as fin:
         cnt = 0
+        avg_size = []
         for line in fin:
             cnt += 1
             if cnt % 10000 == 0:
                 print(cnt)
             instance = json.loads(line)
+            avg_size.append(len(instance['evidences']))
             if len(instance['evidences']) > size:
                 instance['evidences'] = instance['evidences'][:size]
 
@@ -37,6 +39,7 @@ def load_bert_features_claim(file, size):
     features = torch.FloatTensor(features)
     labels = torch.LongTensor(labels)
     claims = torch.FloatTensor(claims)
+    print('Average Evidence Length:',sum(avg_size) / len(avg_size))
     return features, labels, claims
 
 

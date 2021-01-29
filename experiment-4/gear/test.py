@@ -24,6 +24,10 @@ parser.add_argument("--pool", type=str, default="att", help='Aggregating method:
 parser.add_argument("--layer", type=int, default=1, help='Graph Layer.')
 parser.add_argument("--evi_num", type=int, default=5, help='Evidence num.')
 
+parser.add_argument("--dev_features", default='data/graph_features/dev_features.json', type=str, required=True)
+parser.add_argument("--train_features", default='data/graph_features/train_features.json', type=str, required=True)
+parser.add_argument("--note", default='_', type=str,  help='Give it keyword for trial runs.')
+
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 
@@ -33,8 +37,8 @@ torch.manual_seed(args.seed)
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
-dev_features, dev_claims = load_bert_features_claim_test('experiment-4/features/trial.json', args.evi_num)
-test_features, test_claims = load_bert_features_claim_test('experiment-4/features/trail_train.json', args.evi_num)
+dev_features, dev_claims = load_bert_features_claim_test(args.dev_features, args.evi_num)
+test_features, test_claims = load_bert_features_claim_test(args.train_features, args.evi_num)
 
 feature_num = dev_features[0].shape[1]
 model = GEAR(nfeat=feature_num, nins=args.evi_num, nclass=3, nlayer=args.layer, pool=args.pool)
@@ -57,7 +61,7 @@ test_dataloader = DataLoader(test_data, batch_size=args.batch_size)
 seeds = [314]
 
 for seed in seeds:
-    base_dir = 'experiment-4/outputs/gear-%devi-%dlayer-%s-%dseed-001-2/' % (args.evi_num, args.layer, args.pool, seed)
+    base_dir = 'experiment-4/outputs/gear-%devi-%dlayer-%s-%dseed-001%s/' % (args.evi_num, args.layer, args.pool, args.seed, args.note)
     if not os.path.exists(base_dir + 'results.txt'):
         print('%s results do not exist!' % base_dir)
         continue

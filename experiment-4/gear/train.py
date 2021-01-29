@@ -25,6 +25,10 @@ parser.add_argument("--pool", type=str, default="att", help='Aggregating method:
 parser.add_argument("--layer", type=int, default=1, help='Graph Layer.')
 parser.add_argument("--evi_num", type=int, default=5, help='Evidence num.')
 
+parser.add_argument("--dev_features", default='data/graph_features/dev_features.json', type=str, required=True)
+parser.add_argument("--train_features", default='data/graph_features/train_features.json', type=str, required=True)
+parser.add_argument("--note", default='_', type=str,  help='Give it keyword for trial runs.')
+
 
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -35,7 +39,7 @@ torch.manual_seed(args.seed)
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
-dir_path = 'experiment-4/outputs/gear-%devi-%dlayer-%s-%dseed-001-2/' % (args.evi_num, args.layer, args.pool, args.seed)
+dir_path = 'experiment-4/outputs/gear-%devi-%dlayer-%s-%dseed-001%s/' % (args.evi_num, args.layer, args.pool, args.seed, args.note)
 if not os.path.exists(dir_path):
     os.mkdir(dir_path)
 
@@ -45,8 +49,9 @@ if not os.path.exists(dir_path):
 #else:
 #    print(dir_path)
 
-train_features, train_labels, train_claims = load_bert_features_claim('experiment-4/features/trail_train.json', args.evi_num)
-dev_features, dev_labels, dev_claims = load_bert_features_claim('experiment-4/features/trial.json', args.evi_num)
+train_features, train_labels, train_claims = load_bert_features_claim(args.train_features, args.evi_num)
+print(train_features.shape) #50 input vectors of length 768 (hidden units) for 5 evidences
+dev_features, dev_labels, dev_claims = load_bert_features_claim(args.dev_features, args.evi_num)
 
 feature_num = train_features[0].shape[1]
 model = GEAR(nfeat=feature_num, nins=args.evi_num, nclass=3, nlayer=args.layer, pool=args.pool) #central line, study GEAR in models script

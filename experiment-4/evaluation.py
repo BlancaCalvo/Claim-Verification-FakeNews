@@ -3,6 +3,7 @@ import numpy as np
 import json
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score
 import re
+import argparse
 
 ENCODING = 'utf-8'
 
@@ -66,6 +67,17 @@ def dev_scorer(truth_file, output_file):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--seed', type=int, default=314, help='Random seed.')
+    parser.add_argument("--pool", type=str, default="att", help='Aggregating method: top, max, mean, concat, att, sum')
+    parser.add_argument("--layer", type=int, default=1, help='Graph Layer.')
+    parser.add_argument("--evi_num", type=int, default=5, help='Evidence num.')
+
+    parser.add_argument("--dev_data", default='data/gear/gear-dev-set-0_001.tsv', type=str, required=True)
+    parser.add_argument("--note", default='_', type=str, help='Give it keyword for trial runs.')
+
+    args = parser.parse_args()
+
     print('Dev score:')
-    dev_scorer('gear/trial.tsv',
-               'experiment-4/outputs/gear-5evi-1layer-att-314seed-001-2/dev-results.tsv')
+    dev_scorer(args.dev_data,
+               'experiment-4/outputs/gear-%devi-%dlayer-%s-%dseed-001%s/' % (args.evi_num, args.layer, args.pool, args.seed, args.note))

@@ -51,7 +51,7 @@ class AttentionLayer(nn.Module):
 
 
 class GEAR(nn.Module):
-    def __init__(self, nfeat, nins, nclass, nlayer, pool):
+    def __init__(self, nfeat, nins, nclass, nlayer, pool): #nins és número de evidències
         super(GEAR, self).__init__()
         self.nlayer = nlayer
 
@@ -73,19 +73,19 @@ class GEAR(nn.Module):
         self.bias.data.uniform_(-stdv, stdv)
 
     def forward(self, inputs, claims):
-        for i in range(self.nlayer):
-            inputs = self.attentions[i](inputs)
+        for i in range(self.nlayer): # maybe we could try to do an ablation test removing this part?
+            inputs = self.attentions[i](inputs) #just within evidence attention coefficients
 
         if self.pool == 'att':
-            inputs = self.aggregate(inputs, -1, claims)
-        if self.pool == 'max':
-            inputs = torch.max(inputs, dim=1)[0]
-        if self.pool == 'mean':
-            inputs = torch.mean(inputs, dim=1)
-        if self.pool == 'top':
-            inputs = torch.index_select(inputs, 1, self.index).squeeze()
-        if self.pool == 'sum':
-            inputs = inputs.sum(dim=1)
+            inputs = self.aggregate(inputs, -1, claims) #attention coefficient of evidence in relation to claim
+        # if self.pool == 'max': #maybe try this in the future, but it's not really the point of the thesis
+        #     inputs = torch.max(inputs, dim=1)[0]
+        # if self.pool == 'mean':
+        #     inputs = torch.mean(inputs, dim=1)
+        # if self.pool == 'top':
+        #     inputs = torch.index_select(inputs, 1, self.index).squeeze()
+        # if self.pool == 'sum':
+        #     inputs = inputs.sum(dim=1)
 
         inputs = F.relu(torch.mm(inputs, self.weight) + self.bias)
         return F.log_softmax(inputs, dim=1)
