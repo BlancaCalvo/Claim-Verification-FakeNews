@@ -50,10 +50,12 @@ if not os.path.exists(dir_path):
 #    print(dir_path)
 
 train_features, train_labels, train_claims = load_bert_features_claim(args.train_features, args.evi_num)
-print(train_features.shape) #50 input vectors of length 768 (hidden units) for 5 evidences
+print(train_features.shape) #[19948, 25, 768]) # [n_instances, n_evidence_vectors, length_vectors]
+print(train_claims.shape) #[19948, 5, 768]) # [n_instances, n_claim_vectors, length_vectors]
 dev_features, dev_labels, dev_claims = load_bert_features_claim(args.dev_features, args.evi_num)
 
 feature_num = train_features[0].shape[1]
+print(feature_num)
 model = GEAR(nfeat=feature_num, nins=args.evi_num, nclass=3, nlayer=args.layer, pool=args.pool) #central line, study GEAR in models script
 
 optimizer = optim.Adam(model.parameters(),

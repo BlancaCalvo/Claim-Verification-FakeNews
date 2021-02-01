@@ -16,29 +16,33 @@ def feature_pooling(features, size):
 
 
 def load_bert_features_claim(file, size):
+    print('Loading data.')
     features, labels, claims = [], [], []
     label_to_num = {'SUPPORTS': 0, 'REFUTES': 1, 'NOTENOUGHINFO': 2}
 
     with open(file, 'rb') as fin:
         cnt = 0
-        avg_size = []
+        avg_size = avg_size_claim = []
         for line in fin:
             cnt += 1
             if cnt % 10000 == 0:
                 print(cnt)
             instance = json.loads(line)
             avg_size.append(len(instance['evidences']))
+            avg_size_claim.append(len(instance['claim']))
             if len(instance['evidences']) > size:
                 instance['evidences'] = instance['evidences'][:size]
-
+            if len(instance['claim']) > 5:
+                instance['claim'] = instance['evidences'][:5]
             feature = feature_pooling(instance['evidences'], size)
             features.append(feature)
             labels.append(label_to_num[instance['label']])
-            claims.append(instance['claim'])
+            claims.append(feature_pooling(instance['claim'], 5))
 
     features = torch.FloatTensor(features)
     labels = torch.LongTensor(labels)
     claims = torch.FloatTensor(claims)
+    print('Average Claim Length:', sum(avg_size_claim) / len(avg_size_claim))
     print('Average Evidence Length:',sum(avg_size) / len(avg_size))
     return features, labels, claims
 
