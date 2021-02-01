@@ -52,7 +52,6 @@ def read_examples_SRL(input_file, predictor):
                     sr_parts = re.findall(r'\[[A-Z0-9]+:.*?\]', proposition['description'])
                     for part in sr_parts:
                         role, argument = part.replace('[','').replace(']','').split(': ', 1)
-                        #node = part.replace('[', '').replace(']', '').replace(':', '') #use nodes instead of arguments to include de role labels
                         all_nodes.append(argument)
                     for pair in itertools.combinations(all_nodes, 2):
                         examples.append(InputExample(unique_id=unique_id, text_a=pair[0], text_b=pair[1],
@@ -61,22 +60,21 @@ def read_examples_SRL(input_file, predictor):
 
 
             for evidence in evidences:
-                evidence = re.sub(r'\.[a-zA-Z0-9 #\-–:]*$', '', evidence) # instead of this line I should change the build_gear_input_set.py script
-                #try:
-                    #prediction = run_predictor_batch([{'sentence': evidence}], predictor)
-                prediction = predictor.predict_json({'sentence': evidence})
-                #except:
-                #    prediction = [{'verbs': ''}]
+                evidence = re.sub(r'\.[a-zA-Z \-é0-9\(\)]*$', '', evidence) # instead of this line I should change the build_gear_input_set.py script
+                try:
+                    prediction = predictor.predict_json({'sentence': evidence})
+                except RuntimeError:
+                    print('Length issue with this evidence: ', evidence)
+                    continue
                 if len(prediction['verbs']) == 0:
                     continue
                 for proposition in prediction['verbs']:
                     all_nodes = []
                     sr_parts = re.findall(r'\[[A-Z0-9]+:.*?\]', proposition['description'])
                     for part in sr_parts:
-                        #node = part.replace('[', '').replace(']', '').replace(':', '')
                         try:
                             role, argument = part.replace('[', '').replace(']', '').split(': ', 1)
-                        except:
+                        except ValueError:
                             print('no role')
                             continue
                         all_nodes.append(argument)
