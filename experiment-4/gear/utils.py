@@ -66,6 +66,7 @@ def load_bert_features_claim_test(file, size):
 
     features = torch.FloatTensor(features)
     claims = torch.FloatTensor(claims)
+    print('Done.')
     return features, claims
 
 
