@@ -23,7 +23,8 @@ parser.add_argument('--weight_decay', type=float, default=5e-4, help='Weight dec
 
 parser.add_argument("--pool", type=str, default="att", help='Aggregating method: top, max, mean, concat, att, sum')
 parser.add_argument("--layer", type=int, default=1, help='Graph Layer.')
-parser.add_argument("--evi_num", type=int, default=5, help='Evidence num.')
+parser.add_argument("--evi_nodes", type=int, default=25, help='Number of nodes for evidences.')
+parser.add_argument("--claim_nodes", type=int, default=1, help='Number of nodes for claims.')
 
 parser.add_argument("--dev_features", default='data/graph_features/dev_features.json', type=str, required=True)
 parser.add_argument("--train_features", default='data/graph_features/train_features.json', type=str, required=True)
@@ -39,7 +40,7 @@ torch.manual_seed(args.seed)
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
-dir_path = 'experiment-4/outputs/gear-%devi-%dlayer-%s-%dseed-001%s/' % (args.evi_num, args.layer, args.pool, args.seed, args.note)
+dir_path = 'experiment-4/outputs/gear-%devi-%dclaim-%dlayer-%s-%dseed-001%s/' % (args.evi_nodes, args.claim_nodes, args.layer, args.pool, args.seed, args.note)
 if not os.path.exists(dir_path):
     os.mkdir(dir_path)
 
@@ -49,14 +50,13 @@ if not os.path.exists(dir_path):
 #else:
 #    print(dir_path)
 
-train_features, train_labels, train_claims = load_bert_features_claim(args.train_features, args.evi_num)
-print(train_features.shape) #[19948, 25, 768]) # [n_instances, n_evidence_vectors, length_vectors]
-print(train_claims.shape) #[19948, 5, 768]) # [n_instances, n_claim_vectors, length_vectors]
-dev_features, dev_labels, dev_claims = load_bert_features_claim(args.dev_features, args.evi_num)
+train_features, train_labels, train_claims = load_bert_features_claim(args.train_features, args.evi_nodes, args.claim_nodes)
+dev_features, dev_labels, dev_claims = load_bert_features_claim(args.dev_features, args.evi_nodes, args.claim_nodes)
+print(train_features.shape) #[19948, 25, 768]) # [n_instances, n_evidence_vectors (nodes), length_vectors]
+print(train_claims.shape) #[19948, 5, 768]) # [n_instances, n_claim_vectors (nodes), length_vectors]
 
 feature_num = train_features[0].shape[1]
-print(feature_num)
-model = GEAR(nfeat=feature_num, nins=args.evi_num, nclass=3, nlayer=args.layer, pool=args.pool) #central line, study GEAR in models script
+model = GEAR(nfeat=feature_num, nins=args.evi_nodes, nclaim=args.claim_nodes, nclass=3, nlayer=args.layer, pool=args.pool)
 
 optimizer = optim.Adam(model.parameters(),
                        lr=args.lr,

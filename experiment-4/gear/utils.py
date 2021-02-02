@@ -15,7 +15,7 @@ def feature_pooling(features, size):
     return np.array(features)
 
 
-def load_bert_features_claim(file, size):
+def load_bert_features_claim(file, size, claim_size):
     print('Loading data.')
     features, labels, claims = [], [], []
     label_to_num = {'SUPPORTS': 0, 'REFUTES': 1, 'NOTENOUGHINFO': 2}
@@ -32,12 +32,15 @@ def load_bert_features_claim(file, size):
             avg_size_claim.append(len(instance['claim']))
             if len(instance['evidences']) > size:
                 instance['evidences'] = instance['evidences'][:size]
-            if len(instance['claim']) > 5:
-                instance['claim'] = instance['evidences'][:5]
+            if len(instance['claim'])==1:
+                claim = instance['claim']
+            elif len(instance['claim']) > claim_size:
+                instance['claim'] = instance['claim'][:claim_size]
+                claim = feature_pooling(instance['claim'], claim_size)
             feature = feature_pooling(instance['evidences'], size)
             features.append(feature)
             labels.append(label_to_num[instance['label']])
-            claims.append(feature_pooling(instance['claim'], 5))
+            claims.append(claim)
 
     features = torch.FloatTensor(features)
     labels = torch.LongTensor(labels)

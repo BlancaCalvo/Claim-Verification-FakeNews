@@ -6,10 +6,11 @@ from torch.nn import BatchNorm1d, Linear, ReLU
 
 
 class SelfAttentionLayer(nn.Module):
-    def __init__(self, nhid, nins):
+    def __init__(self, nhid, nins, nclaim):
         super(SelfAttentionLayer, self).__init__()
         self.nhid = nhid
         self.nins = nins
+        self.nclaim = nclaim
         self.project = nn.Sequential(
             Linear(nhid, 64),
             ReLU(True),
@@ -18,19 +19,20 @@ class SelfAttentionLayer(nn.Module):
 
     def forward(self, inputs, index, claims):
         tmp = None
-        if index > -1:
+        if index > -1: # comes here when inside AttentionLayer
             idx = torch.LongTensor([index]).cuda()
             own = torch.index_select(inputs, 1, idx)
             own = own.repeat(1, self.nins, 1)
             tmp = torch.cat((own, inputs), 2)
-        else:
+        else: # comes here in the aggregation part
             print(claims.shape) #[256, 5, 768]
             print(inputs.shape) #[256, 25, 768]
-            #claims = claims.unsqueeze(1) #adds a dimension of 1 to the claims (it needed it before, I think not anymore)
-            #print(claims.shape) #torch.Size([256, 1, 5, 768])
-            #claims = claims.repeat(1, self.nins, 1)
-            claims = claims.repeat(1, 5, 1) # repeats the claim vector as many time as evidences there are, so that claims and inputs can be concatenated
-            #each argument is the repeatitions of each axis, we now repeat axis 1 5 times because we want it to have [256, 25, 768]
+            if self.nclaims ==1:
+                claims = claims.unsqueeze(1) #adds a dimension of 1 to the claims (it needed it before, I think not anymore)
+                claims = claims.repeat(1, self.nins, 1)
+            else:
+                claims = claims.repeat(1, (self.nins/self.nclaims), 1) # repeats the claim vector as many time as evidences there are, so that claims and inputs can be concatenated
+                #each argument is the repeatitions of each axis, we now repeat axis 1 5 times because we want it to have [256, 25, 768]
             print(claims.shape)
             tmp = torch.cat((claims, inputs), 2)
             print(tmp.shape)
@@ -58,9 +60,10 @@ class AttentionLayer(nn.Module):
 
 
 class GEAR(nn.Module):
-    def __init__(self, nfeat, nins, nclass, nlayer, pool): #nins és número de evidències
+    def __init__(self, nfeat, nins, nclaim, nclass, nlayer, pool): #nins és número de evidències
         super(GEAR, self).__init__()
         self.nlayer = nlayer
+        self.nclaim = nclaim
 
         self.attentions = [AttentionLayer(nins, nfeat) for _ in range(nlayer)]
         self.batch_norms = [BatchNorm1d(nins) for _ in range(nlayer)]
@@ -69,7 +72,7 @@ class GEAR(nn.Module):
 
         self.pool = pool
         if pool == 'att':
-            self.aggregate = SelfAttentionLayer(nfeat * 2, nins)
+            self.aggregate = SelfAttentionLayer(nfeat * 2, nins, nclaim)
         self.index = torch.LongTensor([0]).cuda()
 
         self.weight = nn.Parameter(torch.FloatTensor(nfeat, nclass))
@@ -81,9 +84,12 @@ class GEAR(nn.Module):
 
     def forward(self, inputs, claims):
         for i in range(self.nlayer): # maybe we could try to do an ablation test removing this part?
-            inputs = self.attentions[i](inputs) #just within evidence attention coefficients
+            inputs = self.attentions[i](inputs) # between evidences attention coefficients
 
-        # if we add claim a graph features we probably have to add here too the attention coefficients for claims
+        # if we add claim a graph features we have to add here too the attention coefficients for claims
+        #if self.nclaim > 1:
+        #    for i in range(self.nlayer):
+        #        claims = self.attentions[i](claims) #do this later, because this is addapted for evidences
 
         if self.pool == 'att':
             inputs = self.aggregate(inputs, -1, claims) #attention coefficient of evidence in relation to claim
