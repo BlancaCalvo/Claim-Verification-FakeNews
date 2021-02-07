@@ -137,16 +137,21 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--input_file", default=None, type=str, required=True)
 parser.add_argument("--output_file", default=None, type=str, required=True)
 parser.add_argument("--cuda", default=-1, type=int, required=False)
-parser.add_argument("--graph_claim", default=True, type=bool, required=False)
+#parser.add_argument("--graph_claim", default=False, type=bool, required=True)
+parser.add_argument('--graph_claim', dest='graph', action='store_true')
+parser.add_argument('--no_graph_claim', dest='graph', action='store_false')
+parser.set_defaults(graph=True)
 
 args = parser.parse_args()
 
 # load the fever dataset with evidences (the GEAR one I think)
 predictor = Predictor.from_path("https://storage.googleapis.com/allennlp-public-models/bert-base-srl-2020.11.19.tar.gz", cuda_device=args.cuda)
 
-if args.graph_claim:
+if args.graph:
+    logger.info('Building claims as graphs.')
     examples = read_examples_SRL(args.input_file, predictor)
 else:
+    logger.info('Building claims as strings.')
     examples = read_examples_SRL_1claim(args.input_file, predictor)
 
 # for each claim do SRL parsing and structure the claim so it looks like
@@ -248,6 +253,10 @@ for i in range(len(sentence_embeddings)):
             instances[index]['claim'].append(embedding)
         else:
             instances[index]['evidences'].append(embedding)
+    if args.graph == False:
+        assert len(instances[index]['claim']) == 1
+    else:
+        assert len(instances[index]['claim']) > 0
 
 fout = open(output_file, 'w')
 logger.info("Saving.")

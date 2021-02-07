@@ -6,7 +6,7 @@ from torch.nn import BatchNorm1d, Linear, ReLU
 
 
 class SelfAttentionLayer(nn.Module):
-    def __init__(self, nhid, nins, nclaim):
+    def __init__(self, nhid, nins, nclaim=1):
         super(SelfAttentionLayer, self).__init__()
         self.nhid = nhid
         self.nins = nins
@@ -25,21 +25,22 @@ class SelfAttentionLayer(nn.Module):
             own = own.repeat(1, self.nins, 1)
             tmp = torch.cat((own, inputs), 2)
         else: # comes here in the aggregation part
-            print(claims.shape) #[256, 5, 768]
-            print(inputs.shape) #[256, 25, 768]
-            if self.nclaims ==1:
-                claims = claims.unsqueeze(1) #adds a dimension of 1 to the claims (it needed it before, I think not anymore)
+            print(claims.shape) #[batch_size, 5, 768]
+            print(inputs.shape) #[batch_size, 25, 768]
+            if self.nclaim == 1:
+                #claims = claims.unsqueeze(1) #adds a dimension of 1 to the claims (it needed it before, I think not anymore)
                 claims = claims.repeat(1, self.nins, 1)
             else:
-                claims = claims.repeat(1, (self.nins/self.nclaims), 1) # repeats the claim vector as many time as evidences there are, so that claims and inputs can be concatenated
-                #each argument is the repeatitions of each axis, we now repeat axis 1 5 times because we want it to have [256, 25, 768]
+                claims = claims.repeat(1, int(self.nins/self.nclaim), 1) # repeats the claim vector as many time as evidences there are, so that claims and inputs can be concatenated
+                #each argument is the repetitions of each axis, we now repeat axis 1 5 times because we want it to have [256, 25, 768]
             print(claims.shape)
             tmp = torch.cat((claims, inputs), 2)
             print(tmp.shape)
         # before
-        attention = self.project(tmp)
+        attention = self.project(tmp) # problema cpu aquí quan fa servir claims_attention
         weights = F.softmax(attention.squeeze(-1), dim=1)
         outputs = (inputs * weights.unsqueeze(-1)).sum(dim=1)
+        print(outputs.shape)
         return outputs
 
 
@@ -55,7 +56,7 @@ class AttentionLayer(nn.Module):
     def forward(self, inputs):
         # outputs = torch.cat([att(inputs) for att in self.attentions], dim=1)
         outputs = torch.cat([self.attentions[i](inputs, i, None) for i in range(self.nins)], dim=1)
-        outputs = outputs.view(inputs.shape)
+        outputs = outputs.view(inputs.shape) # reshape to input shape
         return outputs
 
 
@@ -66,6 +67,7 @@ class GEAR(nn.Module):
         self.nclaim = nclaim
 
         self.attentions = [AttentionLayer(nins, nfeat) for _ in range(nlayer)]
+        self.claim_attentions = [AttentionLayer(nclaim, nfeat) for _ in range(nlayer)]
         self.batch_norms = [BatchNorm1d(nins) for _ in range(nlayer)]
         for i, attention in enumerate(self.attentions):
             self.add_module('attention_{}'.format(i), attention)
@@ -83,13 +85,13 @@ class GEAR(nn.Module):
         self.bias.data.uniform_(-stdv, stdv)
 
     def forward(self, inputs, claims):
-        for i in range(self.nlayer): # maybe we could try to do an ablation test removing this part?
-            inputs = self.attentions[i](inputs) # between evidences attention coefficients
+        #for i in range(self.nlayer): # maybe we could try to do an ablation test removing this part?
+        #    inputs = self.attentions[i](inputs) # between evidences attention coefficients
 
         # if we add claim a graph features we have to add here too the attention coefficients for claims
         #if self.nclaim > 1:
         #    for i in range(self.nlayer):
-        #        claims = self.attentions[i](claims) #do this later, because this is addapted for evidences
+        #        claims = self.claim_attentions[i](claims)
 
         if self.pool == 'att':
             inputs = self.aggregate(inputs, -1, claims) #attention coefficient of evidence in relation to claim
@@ -103,4 +105,5 @@ class GEAR(nn.Module):
         #     inputs = inputs.sum(dim=1)
 
         inputs = F.relu(torch.mm(inputs, self.weight) + self.bias)
+        print(inputs.shape)
         return F.log_softmax(inputs, dim=1)

@@ -22,7 +22,8 @@ def load_bert_features_claim(file, size, claim_size):
 
     with open(file, 'rb') as fin:
         cnt = 0
-        avg_size = avg_size_claim = []
+        avg_size = []
+        avg_size_claim = []
         for line in fin:
             cnt += 1
             if cnt % 10000 == 0:
@@ -32,16 +33,13 @@ def load_bert_features_claim(file, size, claim_size):
             avg_size_claim.append(len(instance['claim']))
             if len(instance['evidences']) > size:
                 instance['evidences'] = instance['evidences'][:size]
-            if len(instance['claim'])==1:
-                claim = instance['claim']
-            elif len(instance['claim']) > claim_size:
+            if len(instance['claim']) > claim_size:
                 instance['claim'] = instance['claim'][:claim_size]
-                claim = feature_pooling(instance['claim'], claim_size)
+            claim = feature_pooling(instance['claim'], claim_size) #makes sure all features have the same size
             feature = feature_pooling(instance['evidences'], size)
             features.append(feature)
             labels.append(label_to_num[instance['label']])
             claims.append(claim)
-
     features = torch.FloatTensor(features)
     labels = torch.LongTensor(labels)
     claims = torch.FloatTensor(claims)

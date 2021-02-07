@@ -22,10 +22,11 @@ parser.add_argument('--weight_decay', type=float, default=5e-4, help='Weight dec
 
 parser.add_argument("--pool", type=str, default="att", help='Aggregating method: top, max, mean, concat, att, sum')
 parser.add_argument("--layer", type=int, default=1, help='Graph Layer.')
-parser.add_argument("--evi_num", type=int, default=5, help='Evidence num.')
+parser.add_argument("--evi_nodes", type=int, default=5, help='Evidence num.')
+parser.add_argument("--claim_nodes", type=int, default=5, help='Evidence num.')
 
-parser.add_argument("--dev_features", default='data/graph_features/dev_features.json', type=str, required=True)
-parser.add_argument("--train_features", default='data/graph_features/train_features.json', type=str, required=True)
+parser.add_argument("--dev_features", default='data/graph_features/dev_features_1claim.json', type=str, required=True)
+parser.add_argument("--train_features", default='data/graph_features/train_features_1claim.json', type=str, required=True)
 parser.add_argument("--note", default='_', type=str,  help='Give it keyword for trial runs.')
 
 args = parser.parse_args()
@@ -37,11 +38,11 @@ torch.manual_seed(args.seed)
 if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
-dev_features, dev_claims = load_bert_features_claim_test(args.dev_features, args.evi_num)
-test_features, test_claims = load_bert_features_claim_test(args.train_features, args.evi_num)
+dev_features, dev_claims = load_bert_features_claim_test(args.dev_features, args.evi_nodes)
+test_features, test_claims = load_bert_features_claim_test(args.train_features, args.evi_nodes)
 
 feature_num = dev_features[0].shape[1]
-model = GEAR(nfeat=feature_num, nins=args.evi_num, nclass=3, nlayer=args.layer, pool=args.pool)
+model = GEAR(nfeat=feature_num, nins=args.evi_nodes, nclass=3, nlayer=args.layer, pool=args.pool)
 
 optimizer = optim.Adam(model.parameters(),
                        lr=args.lr,
@@ -61,7 +62,7 @@ test_dataloader = DataLoader(test_data, batch_size=args.batch_size)
 seeds = [314]
 
 for seed in seeds:
-    base_dir = 'experiment-4/outputs/gear-%devi-%dlayer-%s-%dseed-001%s/' % (args.evi_num, args.layer, args.pool, args.seed, args.note)
+    base_dir = 'experiment-4/outputs/gear-%devi-%dclaim-%dlayer-%s-%dseed-001%s/' % (args.evi_nodes, args.claim_nodes, args.layer, args.pool, args.seed, args.note)
     if not os.path.exists(base_dir + 'results.txt'):
         print('%s results do not exist!' % base_dir)
         continue

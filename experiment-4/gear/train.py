@@ -41,6 +41,7 @@ if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
 dir_path = 'experiment-4/outputs/gear-%devi-%dclaim-%dlayer-%s-%dseed-001%s/' % (args.evi_nodes, args.claim_nodes, args.layer, args.pool, args.seed, args.note)
+print(dir_path)
 if not os.path.exists(dir_path):
     os.mkdir(dir_path)
 
@@ -52,8 +53,8 @@ if not os.path.exists(dir_path):
 
 train_features, train_labels, train_claims = load_bert_features_claim(args.train_features, args.evi_nodes, args.claim_nodes)
 dev_features, dev_labels, dev_claims = load_bert_features_claim(args.dev_features, args.evi_nodes, args.claim_nodes)
-print(train_features.shape) #[19948, 25, 768]) # [n_instances, n_evidence_vectors (nodes), length_vectors]
-print(train_claims.shape) #[19948, 5, 768]) # [n_instances, n_claim_vectors (nodes), length_vectors]
+print(train_features.shape) #[n_instances, 25, 768]) # [n_instances, n_evidence_vectors (nodes), length_vectors]
+print(train_claims.shape) #[n_instances, 5, 768]) # [n_instances, n_claim_vectors (nodes), length_vectors]
 
 feature_num = train_features[0].shape[1]
 model = GEAR(nfeat=feature_num, nins=args.evi_nodes, nclaim=args.claim_nodes, nclass=3, nlayer=args.layer, pool=args.pool)
@@ -64,7 +65,7 @@ optimizer = optim.Adam(model.parameters(),
 
 if args.cuda:
     model.cuda()
-    train_features.cuda()
+    train_features.cuda() # RuntimeError: CUDA out of memory. Matrix: [145399, 25, 768]. Doesn't come up with 15.
     train_labels.cuda()
     dev_features.cuda()
     dev_labels.cuda()
@@ -95,6 +96,7 @@ for epoch in range(args.epochs):
 
         optimizer.zero_grad()
         outputs = model(feature_batch, claim_batch)
+        print(outputs.shape)
 
         loss = F.nll_loss(outputs, label_batch)
 
