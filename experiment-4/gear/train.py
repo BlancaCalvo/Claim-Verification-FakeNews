@@ -84,6 +84,7 @@ patience_counter = 0
 best_epoch = 0
 
 for epoch in range(args.epochs):
+    print('Epoch:', epoch)
     model.train()
     running_loss = 0.0
     correct_pred = 0.0
@@ -96,7 +97,7 @@ for epoch in range(args.epochs):
 
         optimizer.zero_grad()
         outputs = model(feature_batch, claim_batch)
-        print(outputs.shape)
+        #print(outputs.shape)
 
         loss = F.nll_loss(outputs, label_batch)
 

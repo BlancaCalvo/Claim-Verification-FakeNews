@@ -102,7 +102,7 @@ def read_examples_SRL_1claim(input_file, predictor):
             claim = line[2]
             evidences = line[3:]
 
-            examples.append(InputExample(unique_id=unique_id, text_a=claim, text_b='',
+            examples.append(InputExample(unique_id=unique_id, text_a=claim, text_b=None,
                                              label=label, index=index, is_claim=True))
             unique_id += 1
 
@@ -183,7 +183,7 @@ else:
 #     torch.distributed.init_process_group(backend='nccl')
 logger.info("device: {} n_gpu: {} distributed training: {}".format(device, n_gpu, bool(local_rank != -1)))
 
-model = BertModel.from_pretrained('bert-base-cased', output_hidden_states=False) #allennlp uses bert-base-uncased, I should probably reconsdier
+model = BertModel.from_pretrained('bert-base-cased', output_hidden_states=False)
 model.to(device)
 
 if local_rank != -1:
