@@ -18,141 +18,52 @@ from tqdm import tqdm
 import collections
 import json
 
+from SRL_extraction import read_examples_SRL, read_examples_SRL_1claim
+
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def read_examples_SRL(input_file, predictor):
-    """Read a list of `InputExample`s from an input file."""
-    examples = []
-    unique_id = line_n = 0
-    num_lines = sum(1 for line in open(input_file))
-    with open(input_file, "r", encoding='utf-8') as reader:
-        while True:
-            line = reader.readline()
-            line_n += 1
-            logger.info("Parsing input with SRL: {}/{}".format(line_n, num_lines))
-            if not line:
-                break
-            line = line.strip().split('\t')
-            index = line[0]
-            label = line[1]
-            claim = line[2]
-            evidences = line[3:]
-
-            prediction = predictor.predict_json({'sentence': claim})
-            if len(prediction['verbs']) == 0:
-                examples.append(InputExample(unique_id=unique_id, text_a=claim, text_b='',
-                                             label=label, index=index, is_claim=True))
-                unique_id += 1
-            else:
-                for proposition in prediction['verbs']:
-                    all_nodes = []
-                    sr_parts = re.findall(r'\[[A-Z0-9]+:.*?\]', proposition['description'])
-                    for part in sr_parts:
-                        role, argument = part.replace('[','').replace(']','').split(': ', 1)
-                        all_nodes.append(argument)
-                    for pair in itertools.combinations(all_nodes, 2):
-                        examples.append(InputExample(unique_id=unique_id, text_a=pair[0], text_b=pair[1],
-                                                     label=label, index=index,is_claim=True))
-                        unique_id += 1
-
-
-            for evidence in evidences:
-                evidence = re.sub(r'\.[a-zA-Z \-é0-9\(\)]*$', '', evidence) # instead of this line I should change the build_gear_input_set.py script
-                try:
-                    prediction = predictor.predict_json({'sentence': evidence})
-                except RuntimeError:
-                    print('Length issue with this evidence: ', evidence)
-                    continue
-                if len(prediction['verbs']) == 0:
-                    continue
-                for proposition in prediction['verbs']:
-                    all_nodes = []
-                    sr_parts = re.findall(r'\[[A-Z0-9]+:.*?\]', proposition['description'])
-                    for part in sr_parts:
-                        try:
-                            role, argument = part.replace('[', '').replace(']', '').split(': ', 1)
-                        except ValueError:
-                            print('no role')
-                            continue
-                        all_nodes.append(argument)
-                    for pair in itertools.combinations(all_nodes, 2):
-                        examples.append(InputExample(unique_id=unique_id, text_a=pair[0], text_b=pair[1],
-                                 label=label, index=index,is_claim=False))
-                        unique_id += 1
-    return examples
-
-def read_examples_SRL_1claim(input_file, predictor):
-    """Read a list of `InputExample`s from an input file."""
-    examples = []
-    unique_id = line_n = 0
-    num_lines = sum(1 for line in open(input_file))
-    with open(input_file, "r", encoding='utf-8') as reader:
-        while True:
-            line = reader.readline()
-            line_n += 1
-            logger.info("Parsing input with SRL: {}/{}".format(line_n, num_lines))
-            if not line:
-                break
-            line = line.strip().split('\t')
-            index = line[0]
-            label = line[1]
-            claim = line[2]
-            evidences = line[3:]
-
-            examples.append(InputExample(unique_id=unique_id, text_a=claim, text_b=None,
-                                             label=label, index=index, is_claim=True))
-            unique_id += 1
-
-            for evidence in evidences:
-                evidence = re.sub(r'\.[a-zA-Z \-é0-9\(\)]*$', '', evidence) # instead of this line I should change the build_gear_input_set.py script
-                try:
-                    prediction = predictor.predict_json({'sentence': evidence})
-                except RuntimeError:
-                    print('Length issue with this evidence: ', evidence)
-                    continue
-                if len(prediction['verbs']) == 0:
-                    continue
-                for proposition in prediction['verbs']:
-                    all_nodes = []
-                    sr_parts = re.findall(r'\[[A-Z0-9]+:.*?\]', proposition['description'])
-                    for part in sr_parts:
-                        try:
-                            role, argument = part.replace('[', '').replace(']', '').split(': ', 1)
-                        except ValueError:
-                            print('no role')
-                            continue
-                        all_nodes.append(argument)
-                    for pair in itertools.combinations(all_nodes, 2):
-                        examples.append(InputExample(unique_id=unique_id, text_a=pair[0], text_b=pair[1],
-                                 label=label, index=index,is_claim=False))
-                        unique_id += 1
-    return examples
-
 parser = argparse.ArgumentParser()
 
 ## Required parameters
 parser.add_argument("--input_file", default=None, type=str, required=True)
-parser.add_argument("--output_file", default=None, type=str, required=True)
+parser.add_argument("--output_file", default='data/graph_features/features.json', type=str, required=False)
 parser.add_argument("--cuda", default=-1, type=int, required=False)
-#parser.add_argument("--graph_claim", default=False, type=bool, required=True)
 parser.add_argument('--graph_claim', dest='graph', action='store_true')
 parser.add_argument('--no_graph_claim', dest='graph', action='store_false')
 parser.set_defaults(graph=True)
+parser.add_argument('--only_srl', dest='only_srl', action='store_true')
+parser.set_defaults(only_srl=False)
+parser.add_argument("--output_srl_file", default='data/graph_features/srl_file.json', type=str, required=False)
+parser.add_argument("--input_srl_file", default=None, type=str, required=False)
 
 args = parser.parse_args()
 
-# load the fever dataset with evidences (the GEAR one I think)
-predictor = Predictor.from_path("https://storage.googleapis.com/allennlp-public-models/bert-base-srl-2020.11.19.tar.gz", cuda_device=args.cuda)
-
-if args.graph:
-    logger.info('Building claims as graphs.')
-    examples = read_examples_SRL(args.input_file, predictor)
+if args.input_srl_file != None:
+    logger.info('Loading srl.')
+    with open(args.input_srl_file, "r") as read_file:
+        data = json.load(read_file)
+    examples = []
+    for element in data:
+        examples.append(InputExample(unique_id=element['unique_id'], text_a=element['text_a'], text_b=element['text_b'],
+                                     label=element['label'], index=element['index'], is_claim=element['is_claim']))
 else:
-    logger.info('Building claims as strings.')
-    examples = read_examples_SRL_1claim(args.input_file, predictor)
+    predictor = Predictor.from_path("https://storage.googleapis.com/allennlp-public-models/bert-base-srl-2020.11.19.tar.gz", cuda_device=args.cuda)
+
+    if args.graph:
+        logger.info('Building claims as graphs.')
+        examples, json_list = read_examples_SRL(args.input_file, predictor)
+    else:
+        logger.info('Building claims as strings.')
+        examples, json_list = read_examples_SRL_1claim(args.input_file, predictor)
+
+    with open(args.output_srl_file, 'w') as fout:
+        json.dump(json_list, fout)
+
+    if args.only_srl:
+        exit()
 
 # for each claim do SRL parsing and structure the claim so it looks like
 #[CLS] became [SEP] Colin Kaepernick [SEP]

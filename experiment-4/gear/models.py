@@ -89,6 +89,7 @@ class GEAR(nn.Module):
             inputs = self.attentions[i](inputs) # between evidences attention coefficients
 
         # if we add claim a graph features we have to add here too the attention coefficients for claims
+        # does not work yet!
         if self.nclaim > 1:
             for i in range(self.nlayer):
                 claims = self.claim_attentions[i](claims)

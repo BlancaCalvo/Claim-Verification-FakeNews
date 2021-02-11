@@ -82,6 +82,9 @@ dev_dataloader = DataLoader(dev_data, batch_size=args.batch_size)
 best_accuracy = 0.0
 patience_counter = 0
 best_epoch = 0
+list_acc = []
+list_loss = []
+list_epochs = []
 
 for epoch in range(args.epochs):
     print('Epoch:', epoch)
@@ -107,7 +110,7 @@ for epoch in range(args.epochs):
         loss.backward()
         optimizer.step()
 
-        description = 'Acc: %lf, Loss: %lf' % (correct_pred / (index + 1) / args.batch_size, running_loss / (index + 1))
+        description = 'Ep: %lf/%lf, Acc: %lf, Loss: %lf' % (epoch, args.epochs, correct_pred / (index + 1) / args.batch_size, running_loss / (index + 1))
         train_tqdm_iterator.set_description(description)
 
     train_loss = running_loss / len(train_dataloader)
@@ -137,6 +140,9 @@ for epoch in range(args.epochs):
     dev_loss = running_loss / len(dev_dataloader)
     dev_accuracy = correct_pred / len(dev_dataloader.dataset)
     print('Dev total acc: %lf, total loss: %lf\r\n' % (dev_accuracy, dev_loss))
+    list_loss.append(dev_loss)
+    list_acc.append(dev_accuracy)
+    list_epochs.append(epoch)
 
     if dev_accuracy > best_accuracy:
         best_accuracy = dev_accuracy
@@ -162,8 +168,15 @@ for epoch in range(args.epochs):
         print("Early stopping...")
         break
 
+print(list_loss)
+print(list_epochs)
+print(list_acc)
 print(best_epoch)
 print(best_accuracy)
+
+#fout = open(dir_path + '/loss_values.txt', 'w')
+#fout.write('%d\t%lf\r\n' % (best_epoch, best_accuracy))
+#fout.close()
 
 fout = open(dir_path + '/results.txt', 'w')
 fout.write('%d\t%lf\r\n' % (best_epoch, best_accuracy))
