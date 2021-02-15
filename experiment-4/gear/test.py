@@ -26,7 +26,7 @@ parser.add_argument("--evi_nodes", type=int, default=5, help='Evidence num.')
 parser.add_argument("--claim_nodes", type=int, default=5, help='Evidence num.')
 
 parser.add_argument("--dev_features", default='data/graph_features/dev_features_1claim.json', type=str, required=True)
-parser.add_argument("--train_features", default='data/graph_features/train_features_1claim.json', type=str, required=True)
+parser.add_argument("--test_features", default='data/graph_features/test_features_short.json', type=str, required=True)
 parser.add_argument("--note", default='_', type=str,  help='Give it keyword for trial runs.')
 
 args = parser.parse_args()
@@ -39,10 +39,10 @@ if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
 dev_features, dev_claims = load_bert_features_claim_test(args.dev_features, args.evi_nodes)
-test_features, test_claims = load_bert_features_claim_test(args.train_features, args.evi_nodes)
+test_features, test_claims = load_bert_features_claim_test(args.test_features, args.evi_nodes)
 
 feature_num = dev_features[0].shape[1]
-model = GEAR(nfeat=feature_num, nins=args.evi_nodes, nclass=3, nlayer=args.layer, pool=args.pool)
+model = GEAR(nfeat=feature_num, nins=args.evi_nodes, nclaim=args.claim_nodes, nclass=3, nlayer=args.layer, pool=args.pool)
 
 optimizer = optim.Adam(model.parameters(),
                        lr=args.lr,
