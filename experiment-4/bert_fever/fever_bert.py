@@ -3,7 +3,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trai
 import numpy as np
 
 task = "mnli"
-model_checkpoint = "bert-base-uncased"
+model_checkpoint = "ishan/distilbert-base-uncased-mnli"
 batch_size = 16
 actual_task = "mnli"
 metric = load_metric('accuracy', actual_task)
