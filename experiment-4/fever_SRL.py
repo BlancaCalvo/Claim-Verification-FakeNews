@@ -75,7 +75,7 @@ else:
 
 # FUTURE OPTION: include roles so it can be used for fine-tuning with the new vocabulary ver arg arg-tmp arg-loc
 
-tokenizer = BertTokenizer.from_pretrained('bert-base-cased', do_lower_case=False)
+tokenizer = BertTokenizer.from_pretrained('bert-base-cased', do_lower_case=False) # proposta: canviar a BERT-Pair aquí
 
 features = convert_examples_to_features(
          examples=examples, seq_length=20, tokenizer=tokenizer)
@@ -94,14 +94,14 @@ else:
 #     torch.distributed.init_process_group(backend='nccl')
 logger.info("device: {} n_gpu: {} distributed training: {}".format(device, n_gpu, bool(local_rank != -1)))
 
-model = BertModel.from_pretrained('bert-base-cased', output_hidden_states=False)
+model = BertModel.from_pretrained('bert-base-cased', output_hidden_states=False) # proposta: canviar a BERT-Pair aquí
 model.to(device)
 
-if local_rank != -1:
-    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank],
-                                                      output_device=local_rank)
-elif n_gpu > 1:
-    model = torch.nn.DataParallel(model)
+#if local_rank != -1:
+#    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank],
+#                                                      output_device=local_rank)
+#elif n_gpu > 1:
+#    model = torch.nn.DataParallel(model)
 
 all_input_ids = torch.tensor([f.input_ids for f in features], dtype=torch.long)
 all_input_mask = torch.tensor([f.input_mask for f in features], dtype=torch.long)
