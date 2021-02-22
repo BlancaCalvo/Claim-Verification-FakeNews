@@ -35,7 +35,7 @@ import sklearn.metrics as mtc
 class InputExample(object):
     """A single training/test example for simple sequence classification."""
 
-    def __init__(self, guid, text_a, text_b=None, label=None):
+    def __init__(self, guid, text_a, text_b=None, label=None, index=None):
         """Constructs a InputExample.
 
         Args:
@@ -51,6 +51,7 @@ class InputExample(object):
         self.text_a = text_a
         self.text_b = text_b
         self.label = label
+        self.index = index
 
 
 class InputFeatures(object):
@@ -489,8 +490,9 @@ tag_vocab = []
 def convert_examples_to_features(examples, max_seq_length, tokenizer, srl_predictor):
     """Loads a data file into a list of `InputBatch`s."""
 
-    label_map = {label : i for i, label in enumerate(examples.label)}
-    print(label_map)
+    #label_map = {label : i for i, label in enumerate(examples.label)}
+    #print(label_map)
+    label_map = {'SUPPORTS':0, 'REFUTES': 1, 'NOTENOUGHINFO': 2}
     max_aspect = 0
     features = []
     for (ex_index, example) in enumerate(examples):
@@ -545,7 +547,7 @@ def convert_examples_to_features(examples, max_seq_length, tokenizer, srl_predic
         segment_ids = [0] * len(tokens)
         len_seq_a = tok_to_orig_index_a[len(tokens)-1] + 1
         len_seq_b = None
-        if  example.text_b:
+        if example.text_b:
             tokens += tokens_b + ["[SEP]"]
             len_seq_b = tok_to_orig_index_b[len(tokens_b)] + 1  #+1 SEP -1 for index
             segment_ids += [1] * (len(tokens_b) + 1)

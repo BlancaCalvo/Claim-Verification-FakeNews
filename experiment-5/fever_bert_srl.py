@@ -1,61 +1,54 @@
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, AdamW, get_linear_schedule_with_warmup
 import numpy as np
-from run_classifier import InputExample, convert_examples_to_features
+from run_classifier import InputExample, convert_examples_to_features, transform_tag_features
 import torch
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 import random
 import time
 import datetime
 from allennlp.predictors import Predictor
+import argparse
+import logging
+import json
+from tag_model.tag_tokenization import TagTokenizer
+
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+                    datefmt='%m/%d/%Y %H:%M:%S',
+                    level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def format_time(elapsed):
     elapsed_rounded = int(round((elapsed)))
     return str(datetime.timedelta(seconds=elapsed_rounded))
 
-def read_examples(input_file):
-    """Read input to dictionary."""
-    unique_id = 0
+def read_srl_examples(input):
+    with open(input, "r") as read_file:
+        data = json.load(read_file)
     examples = []
-    with open(input_file, "r", encoding='utf-8') as reader:
-        while True:
-            line = reader.readline()
-            if not line:
-                break
-            line = line.strip().split('\t')
-
-            index = line[0]
-            label = line[1]
-            claim = line[2]
-            evidences = line[3:]
-            evi_concat = ' '.join(evidences)
-
-            if label == 'SUPPORTS':
-                label = 0
-            elif label == 'REFUTES':
-                label = 1
-            elif label == 'NOTENOUGHINFO':
-                label = 2
-
-            examples.append(InputExample(unique_id=unique_id, text_a=claim, text_b=evi_concat,
-                                         label=label, index=index, is_claim=False))
-
-            unique_id += 1
+    for element in data:
+        examples.append(InputExample(guid=element['unique_id'], text_a=element['claim_srl'], text_b=element['evidence_srl'],label=element['label'], index=element['index']))
     return examples
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--train_srl_file", default=None, type=str, required=True)
+parser.add_argument("--dev_srl_file", default=None, type=str, required=True)
+parser.add_argument("--cuda", default=-1, type=int, required=False) # set to 0
+args = parser.parse_args()
 
 model_checkpoint = "bert-base-uncased"
 
-train_dataset = read_examples('data/gear/gear-train-set-0_001.tsv')
-dev_dataset = read_examples('data/gear/gear-dev-set-0_001.tsv')
+logger.info('Loading srl.')
+
+train_dataset = read_srl_examples(args.train_srl_file)
+dev_dataset = read_srl_examples(args.dev_srl_file)
 
 tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
 
 #predictor = Predictor.from_path("https://storage.googleapis.com/allennlp-public-models/bert-base-srl-2020.11.19.tar.gz")
 
-#train_encoded_dataset = convert_examples_to_features(examples=train_dataset, seq_length=300, tokenizer=tokenizer)
-#dev_encoded_dataset = convert_examples_to_features(examples=dev_dataset, seq_length=300, tokenizer=tokenizer)
 train_encoded_dataset = convert_examples_to_features(train_dataset, max_seq_length=300, tokenizer=tokenizer, srl_predictor=None)
 dev_encoded_dataset = convert_examples_to_features(dev_dataset, max_seq_length=300, tokenizer=tokenizer, srl_predictor=None)
-
+tag_tokenizer = TagTokenizer()
 
 num_labels = 3
 model = AutoModelForSequenceClassification.from_pretrained(model_checkpoint, num_labels=num_labels)
@@ -65,13 +58,16 @@ def flat_accuracy(preds, labels): # from https://medium.com/@aniruddha.choudhury
     labels_flat = labels.flatten()
     return np.sum(pred_flat == labels_flat) / len(labels_flat)
 
-# CREATE TENSORS
-train_inputs = torch.tensor([f.input_ids for f in train_encoded_dataset], dtype=torch.long)
-validation_inputs = torch.tensor([f.input_ids for f in dev_encoded_dataset], dtype=torch.long)
-train_labels = torch.tensor([f.label for f in train_encoded_dataset], dtype=torch.long)
-validation_labels = torch.tensor([f.label for f in dev_encoded_dataset], dtype=torch.long)
-train_masks = torch.tensor([f.input_mask for f in train_encoded_dataset], dtype=torch.long)
-validation_masks = torch.tensor([f.input_mask for f in dev_encoded_dataset], dtype=torch.long)
+# CREATE TENSORS <---- I AM HERE!
+train_features = transform_tag_features(3, train_encoded_dataset, tag_tokenizer, max_seq_length=300) #max_num_aspect=3, check this
+dev_features = transform_tag_features(3, dev_encoded_dataset, tag_tokenizer, max_seq_length=300)
+
+train_inputs = torch.tensor([f.input_ids for f in train_features], dtype=torch.long)
+validation_inputs = torch.tensor([f.input_ids for f in dev_features], dtype=torch.long)
+train_labels = torch.tensor([f.label_id for f in train_features], dtype=torch.long)
+validation_labels = torch.tensor([f.label_id for f in dev_features], dtype=torch.long)
+train_masks = torch.tensor([f.input_mask for f in train_features], dtype=torch.long)
+validation_masks = torch.tensor([f.input_mask for f in dev_features], dtype=torch.long)
 
 # DATALOADER
 batch_size = 32

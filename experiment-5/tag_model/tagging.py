@@ -13,7 +13,7 @@ class SRLPredictor(object):
 
 def get_tags(srl_predictor, tok_text, tag_vocab):
     if srl_predictor == None:
-        srl_result = json.loads(tok_text)  # can load a pre-tagger dataset for quick evaluation
+        srl_result = tok_text  # can load a pre-tagger dataset for quick evaluation
     else:
         srl_result = srl_predictor.predict(tok_text)
     sen_verbs = srl_result['verbs']
