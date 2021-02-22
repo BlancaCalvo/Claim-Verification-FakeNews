@@ -49,12 +49,12 @@ dev_dataset = read_examples('data/gear/gear-dev-set-0_001.tsv')
 
 tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
 
-predictor = Predictor.from_path("https://storage.googleapis.com/allennlp-public-models/bert-base-srl-2020.11.19.tar.gz")
+#predictor = Predictor.from_path("https://storage.googleapis.com/allennlp-public-models/bert-base-srl-2020.11.19.tar.gz")
 
 #train_encoded_dataset = convert_examples_to_features(examples=train_dataset, seq_length=300, tokenizer=tokenizer)
 #dev_encoded_dataset = convert_examples_to_features(examples=dev_dataset, seq_length=300, tokenizer=tokenizer)
-train_encoded_dataset = convert_examples_to_features(train_dataset, max_seq_length=300, tokenizer=tokenizer, srl_predictor=predictor)
-dev_encoded_dataset = convert_examples_to_features(dev_dataset, max_seq_length=300, tokenizer=tokenizer, srl_predictor=predictor)
+train_encoded_dataset = convert_examples_to_features(train_dataset, max_seq_length=300, tokenizer=tokenizer, srl_predictor=None)
+dev_encoded_dataset = convert_examples_to_features(dev_dataset, max_seq_length=300, tokenizer=tokenizer, srl_predictor=None)
 
 
 num_labels = 3
