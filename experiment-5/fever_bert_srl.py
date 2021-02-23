@@ -10,15 +10,14 @@ from allennlp.predictors import Predictor
 
 import torch
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, AdamW, get_linear_schedule_with_warmup
+from transformers import AdamW, get_linear_schedule_with_warmup
+from transformers.models.bert.tokenization_bert import BertTokenizer
 
 # FROM SemBERT
 from tagged_features import InputExample, convert_examples_to_features, transform_tag_features
 from tag_model.tag_tokenization import TagTokenizer
 from tag_model.modeling import TagConfig
-from pytorch_pretrained_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
-from pytorch_pretrained_bert.modeling import BertForSequenceClassificationTag
-from pytorch_pretrained_bert.tokenization import BertTokenizer
+from pytorch_pretrained_bert.modeling import BertForSequenceClassificationTag # és un model propi
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
@@ -37,10 +36,29 @@ def read_srl_examples(input):
         examples.append(InputExample(guid=element['unique_id'], text_a=element['claim_srl'], text_b=element['evidence_srl'],label=element['label'], index=element['index']))
     return examples
 
+# def read_srl_examples_concat(input):
+#     with open(input, "r") as read_file:
+#         data = json.load(read_file)
+#     examples = []
+#     index = [f['index'] for f in data]
+#     for i in index.unique():
+#         evidences = ''
+#         data[inst for inst, j in enumerate(data['index']) if j == i]
+#
+#         examples.append(InputExample(guid=element['unique_id'], text_a=element['claim_srl'], text_b=element['evidence_srl'],label=element['label'], index=element['index']))
+#     return examples
+
+def flat_accuracy(preds, labels, index): # from https://medium.com/@aniruddha.choudhury94/part-2-bert-fine-tuning-tutorial-with-pytorch-for-text-classification-on-the-corpus-of-linguistic-18057ce330e1
+    pred_flat = np.argmax(preds, axis=1)#.flatten()
+    labels_flat = labels#.flatten()
+    #print(list(zip(index, pred_flat)))
+    return np.sum(pred_flat == labels_flat) / len(labels_flat)
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--train_srl_file", default=None, type=str, required=True)
 parser.add_argument("--dev_srl_file", default=None, type=str, required=True)
-parser.add_argument("--cuda", default=-1, type=int, required=False) # set to 0
+#parser.add_argument("--cuda", default=-1, type=int, required=False) # set to 0
+parser.add_argument("--concat", action='store_true', help="Set this flag if you want to concat evidences.")
 args = parser.parse_args()
 
 model_checkpoint = "bert-base-uncased"
@@ -67,15 +85,8 @@ tag_config = TagConfig(tag_vocab_size=vocab_size,
                            output_dim=10,
                            dropout_prob=0.1,
                            num_aspect=max_num_aspect)
-#cache_dir = args.cache_dir if args.cache_dir else os.path.join(PYTORCH_PRETRAINED_BERT_CACHE, 'distributed_{}'.format(args.local_rank))
-model = BertForSequenceClassificationTag.from_pretrained(model_checkpoint,
-              cache_dir=PYTORCH_PRETRAINED_BERT_CACHE,
-              num_labels = num_labels,tag_config=tag_config)
 
-def flat_accuracy(preds, labels): # from https://medium.com/@aniruddha.choudhury94/part-2-bert-fine-tuning-tutorial-with-pytorch-for-text-classification-on-the-corpus-of-linguistic-18057ce330e1
-    pred_flat = np.argmax(preds, axis=1).flatten()
-    labels_flat = labels.flatten()
-    return np.sum(pred_flat == labels_flat) / len(labels_flat)
+model = BertForSequenceClassificationTag.from_pretrained(model_checkpoint, num_labels = num_labels,tag_config=tag_config)
 
 # CREATE TENSOR DATASET
 train_features = transform_tag_features(3, train_encoded_dataset, tag_tokenizer, max_seq_length=300) #max_num_aspect=3, check this
@@ -85,7 +96,8 @@ all_segment_ids = torch.tensor([f.segment_ids for f in train_features], dtype=to
 all_label_ids = torch.tensor([f.label_id for f in train_features], dtype=torch.long)
 all_start_end_idx = torch.tensor([f.orig_to_token_split_idx for f in train_features], dtype=torch.long)
 all_input_tag_ids = torch.tensor([f.input_tag_ids for f in train_features], dtype=torch.long)
-train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_start_end_idx, all_input_tag_ids, all_label_ids)
+all_train_indexes = torch.tensor([f.index_id for f in train_features], dtype=torch.long)
+train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_start_end_idx, all_input_tag_ids, all_label_ids, all_train_indexes)
 
 eval_features = transform_tag_features(3, dev_encoded_dataset, tag_tokenizer, max_seq_length=300)
 all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
@@ -94,7 +106,9 @@ all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=tor
 all_label_ids = torch.tensor([f.label_id for f in eval_features], dtype=torch.long)
 all_start_end_idx = torch.tensor([f.orig_to_token_split_idx for f in eval_features], dtype=torch.long)
 all_input_tag_ids = torch.tensor([f.input_tag_ids for f in eval_features], dtype=torch.long)
-eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_start_end_idx, all_input_tag_ids, all_label_ids)
+all_dev_indexes = torch.tensor([f.index_id for f in eval_features], dtype=torch.long)
+eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_start_end_idx, all_input_tag_ids, all_label_ids, all_dev_indexes)
+
 
 # DATALOADER
 batch_size = 16
@@ -105,7 +119,6 @@ validation_dataloader = DataLoader(eval_data, sampler=validation_sampler, batch_
 
 # PARAMETERS
 seed_val = 1995
-global_step = 0
 nb_tr_steps = 0
 tr_loss = 0
 best_epoch = 0
@@ -129,8 +142,8 @@ torch.cuda.manual_seed_all(seed_val)
 loss_values = []
 for epoch_i in range(0, epochs):
     # TRAINING
-    print('======== Epoch {:} / {:} ========'.format(epoch_i + 1, epochs))
-    print('Training...')
+    logger.info('======== Epoch {:} / {:} ========'.format(epoch_i + 1, epochs))
+    logger.info('Training...')
     t0 = time.time()
     model.train()
     tr_loss = 0
@@ -138,9 +151,9 @@ for epoch_i in range(0, epochs):
     for step, batch in enumerate(train_dataloader):
         if step % 40 == 0 and not step == 0: # Progress update every 40 batches.
             elapsed = format_time(time.time() - t0)
-            print('  Batch {:>5,}  of  {:>5,}.    Elapsed: {:}.'.format(step, len(train_dataloader), elapsed))
+            logger.info('  Batch {:>5,}  of  {:>5,}.    Elapsed: {:}.'.format(step, len(train_dataloader), elapsed))
         batch = tuple(t.to(device) for t in batch)
-        input_ids, input_mask, segment_ids, start_end_idx, input_tag_ids, label_ids = batch
+        input_ids, input_mask, segment_ids, start_end_idx, input_tag_ids, label_ids, index_ids = batch
         loss = model(input_ids, segment_ids, input_mask, start_end_idx, input_tag_ids, label_ids) #in previous model it was outputs[0]
 
         tr_loss += loss.item()
@@ -152,32 +165,36 @@ for epoch_i in range(0, epochs):
 
     # Store the loss value for plotting the learning curve.
     loss_values.append(avg_train_loss)
-    print("")
-    print("  Average training loss: {0:.2f}".format(avg_train_loss))
-    print("  Training epoch took: {:}".format(format_time(time.time() - t0)))
+    logger.info("  Average training loss: {0:.2f}".format(avg_train_loss))
+    logger.info("  Training epoch took: {:}".format(format_time(time.time() - t0)))
 
     # VALIDATION
-    print("Running Validation...")
+    logger.info("Running Validation...")
     t0 = time.time()
     model.eval()
     eval_loss, eval_accuracy = 0, 0
     nb_eval_steps, nb_eval_examples = 0, 0
     for batch in validation_dataloader:
         batch = tuple(t.to(device) for t in batch)
-        input_ids, input_mask, segment_ids, start_end_idx, input_tag_ids, label_ids = batch
+        input_ids, input_mask, segment_ids, start_end_idx, input_tag_ids, label_ids, index_ids = batch
 
         with torch.no_grad():
             logits = model(input_ids, segment_ids, input_mask, start_end_idx, input_tag_ids, None)
 
-        # GET THE LOGITS
+        # GET THE LOGITS & LABELS
         logits = logits.detach().cpu().numpy()
         label_ids = label_ids.to('cpu').numpy()
 
-        # Calculate the accuracy for this batch of test sentences.
-        tmp_eval_accuracy = flat_accuracy(logits, label_ids)
+        # Calculate the accuracy for this batch of instances.
+        tmp_eval_accuracy = flat_accuracy(logits, label_ids, index_ids)
         eval_accuracy += tmp_eval_accuracy
         nb_eval_steps += 1
-    print("  Accuracy: {0:.2f}".format(eval_accuracy / nb_eval_steps))
-    print("  Validation took: {:}".format(format_time(time.time() - t0)))
-print("")
-print("Training complete!")
+        if eval_accuracy > best_result:
+            best_epoch = epoch_i
+            best_result = eval_accuracy
+
+    logger.info("  Accuracy: {0:.2f}".format(eval_accuracy / nb_eval_steps))
+    logger.info("  Validation took: {:}".format(format_time(time.time() - t0)))
+    logger.info("best epoch: %s, result:  %s", str(best_epoch), str(best_result))
+
+logger.info("Training complete!")

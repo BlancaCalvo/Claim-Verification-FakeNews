@@ -1,7 +1,7 @@
 # from: https://github.com/cooelf/SemBERT
+import logging
 
 from tag_model.tagging import get_tags, SRLPredictor
-import logging
 from data_process.datasets import QueryTagSequence
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
@@ -33,7 +33,7 @@ class InputExample(object):
 class InputFeatures(object):
     """A single set of features of data."""
 
-    def __init__(self, input_ids, input_mask, segment_ids, token_tag_sequence_a, token_tag_sequence_b, len_seq_a, len_seq_b, input_tag_ids, input_tag_verbs, input_tag_len, orig_to_token_split_idx, label_id):
+    def __init__(self, input_ids, input_mask, segment_ids, token_tag_sequence_a, token_tag_sequence_b, len_seq_a, len_seq_b, input_tag_ids, input_tag_verbs, input_tag_len, orig_to_token_split_idx, label_id, index_id):
         self.input_ids = input_ids
         self.input_mask = input_mask
         self.segment_ids = segment_ids
@@ -46,6 +46,7 @@ class InputFeatures(object):
         self.input_tag_len = input_tag_len
         self.orig_to_token_split_idx = orig_to_token_split_idx
         self.label_id = label_id
+        self.index_id = index_id
 
 def _truncate_seq_pair(tokens_a, tokens_b, tok_to_orig_index_a, tok_to_orig_index_b, max_length):
     """Truncates a sequence pair in place to the maximum length."""
@@ -167,6 +168,7 @@ def convert_examples_to_features(examples, max_seq_length, tokenizer, srl_predic
         if ex_index < 5:
             logger.info("*** Example ***")
             logger.info("guid: %s" % (example.guid))
+            logger.info("Claim Index: %s" % (example.index))
             logger.info("tokens: %s" % " ".join(
                     [str(x) for x in tokens]))
             logger.info("input_ids: %s" % " ".join([str(x) for x in input_ids]))
@@ -187,7 +189,8 @@ def convert_examples_to_features(examples, max_seq_length, tokenizer, srl_predic
                               input_tag_verbs = None,
                               input_tag_len = None,
                               orig_to_token_split_idx=orig_to_token_split_idx,
-                              label_id=label_id))
+                              label_id=label_id,
+                              index_id = int(example.index)))
     return features
 
 def transform_tag_features(max_num_aspect, features, tag_tokenizer, max_seq_length):
