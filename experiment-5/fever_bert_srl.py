@@ -5,6 +5,8 @@ import datetime
 import argparse
 import logging
 import json
+import itertools
+import operator
 
 from allennlp.predictors import Predictor
 
@@ -17,7 +19,7 @@ from transformers.models.bert.tokenization_bert import BertTokenizer
 from tagged_features import InputExample, convert_examples_to_features, transform_tag_features
 from tag_model.tag_tokenization import TagTokenizer
 from tag_model.modeling import TagConfig
-from pytorch_pretrained_bert.modeling import BertForSequenceClassificationTag # és un model propi
+from pytorch_pretrained_bert.modeling import BertForSequenceClassificationTag, BertForSequenceClassificationTagWithAgg
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
@@ -61,10 +63,23 @@ def flat_accuracy(preds, labels): # from https://medium.com/@aniruddha.choudhury
     labels_flat = labels#.flatten()
     return np.sum(pred_flat == labels_flat) / len(labels_flat)
 
+
+def top_vote(l):
+    values = []
+    keys = []
+    for k, g in itertools.groupby(l, operator.itemgetter(0)):
+        a = [x[1] for x in g]
+        value = sorted(a,key=a.count,reverse=True)[0]
+        values.append(value)
+        keys.append(k)
+    return values, keys
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--train_srl_file", default=None, type=str, required=True)
 parser.add_argument("--dev_srl_file", default=None, type=str, required=True)
 parser.add_argument("--concat", action='store_true', help="Set this flag if you want to concat evidences.")
+parser.add_argument("--aggregate", action='store_true', help="Set this flag if you want to aggregate the evidences.") #does not work yet
+parser.add_argument("--vote", action='store_true', help="Set this flag if you want to make voting system with evidences.")
 args = parser.parse_args()
 
 model_checkpoint = "bert-base-uncased"
@@ -96,7 +111,10 @@ tag_config = TagConfig(tag_vocab_size=vocab_size,
                            dropout_prob=0.1,
                            num_aspect=max_num_aspect)
 
-model = BertForSequenceClassificationTag.from_pretrained(model_checkpoint, num_labels = num_labels,tag_config=tag_config)
+if args.aggregate:
+    model = BertForSequenceClassificationTagWithAgg.from_pretrained(model_checkpoint, num_labels=num_labels, tag_config=tag_config)
+else:
+    model = BertForSequenceClassificationTag.from_pretrained(model_checkpoint, num_labels = num_labels,tag_config=tag_config)
 
 # CREATE TENSOR DATASET
 train_features = transform_tag_features(3, train_encoded_dataset, tag_tokenizer, max_seq_length=300) #max_num_aspect=3, check this
@@ -164,7 +182,10 @@ for epoch_i in range(0, epochs):
             logger.info('  Batch {:>5,}  of  {:>5,}.    Elapsed: {:}.'.format(step, len(train_dataloader), elapsed))
         batch = tuple(t.to(device) for t in batch)
         input_ids, input_mask, segment_ids, start_end_idx, input_tag_ids, label_ids, index_ids = batch
-        loss = model(input_ids, segment_ids, input_mask, start_end_idx, input_tag_ids, label_ids) #in previous model it was outputs[0]
+        if args.aggregate:
+            loss = model(input_ids, index_ids, segment_ids, input_mask, start_end_idx, input_tag_ids, label_ids)
+        else:
+            loss = model(input_ids, segment_ids, input_mask, start_end_idx, input_tag_ids, label_ids)
 
         tr_loss += loss.item()
         loss.backward()
@@ -189,9 +210,12 @@ for epoch_i in range(0, epochs):
         input_ids, input_mask, segment_ids, start_end_idx, input_tag_ids, label_ids, index_ids = batch
 
         with torch.no_grad():
-            logits = model(input_ids, segment_ids, input_mask, start_end_idx, input_tag_ids, None)
+            if args.aggregate:
+                logits = model(input_ids, index_ids, segment_ids, input_mask, start_end_idx, input_tag_ids, None)
+            else:
+                logits = model(input_ids, segment_ids, input_mask, start_end_idx, input_tag_ids, None)
 
-        # GET THE LOGITS & LABELS
+                # GET THE LOGITS & LABELS
         logits = logits.detach().cpu().numpy()
         label_ids = label_ids.to('cpu').numpy()
 
@@ -205,6 +229,14 @@ for epoch_i in range(0, epochs):
 
     logger.info("  Accuracy: {0:.2f}".format(eval_accuracy / nb_eval_steps))
     logger.info("  Validation took: {:}".format(format_time(time.time() - t0)))
-    logger.info("best epoch: %s, result:  %s", str(best_epoch), str(best_result))
+
+    if args.vote:
+        index_ids = index_ids.tolist()
+        predictions = np.argmax(logits, axis=1)
+        final_predictions, indexes = top_vote(list(zip(index_ids, predictions)))
+        final_labels, indexes = top_vote(list(zip(index_ids, label_ids)))
+        logger.info('Claim Verification Accuracy:', np.sum(final_predictions == final_labels) / len(final_labels))
+
+logger.info("best epoch: %s, result:  %s", str(best_epoch), str(best_result))
 
 logger.info("Training complete!")
