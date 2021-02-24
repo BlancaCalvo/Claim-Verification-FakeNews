@@ -36,28 +36,34 @@ def read_srl_examples(input):
         examples.append(InputExample(guid=element['unique_id'], text_a=element['claim_srl'], text_b=element['evidence_srl'],label=element['label'], index=element['index']))
     return examples
 
-# def read_srl_examples_concat(input):
-#     with open(input, "r") as read_file:
-#         data = json.load(read_file)
-#     examples = []
-#     index = [f['index'] for f in data]
-#     for i in index.unique():
-#         evidences = ''
-#         data[inst for inst, j in enumerate(data['index']) if j == i]
-#
-#         examples.append(InputExample(guid=element['unique_id'], text_a=element['claim_srl'], text_b=element['evidence_srl'],label=element['label'], index=element['index']))
-#     return examples
+def read_srl_examples_concat(input):
+    with open(input, "r") as read_file:
+        data = json.load(read_file)
+    examples = []
+    #index = [f['index'] for f in data]
+    res = {'index':''} #'unique_id': None, 'claim_srl':None,'evidence_srl':None,'label':None,
+    first = 1
+    for dic in data:
+        if dic['index'] == res['index']:
+            res['evidence_srl']['verbs'] += (dic['evidence_srl']['verbs'])
+            res['evidence_srl']['words'] += (dic['evidence_srl']['words'])
+        else:
+            if first == 1:
+                res = dic
+                first=0
+                continue
+            examples.append(InputExample(guid=res['index'], text_a=res['claim_srl'], text_b=res['evidence_srl'],label=res['label'], index=res['index']))
+            res = dic
+    return examples
 
-def flat_accuracy(preds, labels, index): # from https://medium.com/@aniruddha.choudhury94/part-2-bert-fine-tuning-tutorial-with-pytorch-for-text-classification-on-the-corpus-of-linguistic-18057ce330e1
+def flat_accuracy(preds, labels): # from https://medium.com/@aniruddha.choudhury94/part-2-bert-fine-tuning-tutorial-with-pytorch-for-text-classification-on-the-corpus-of-linguistic-18057ce330e1
     pred_flat = np.argmax(preds, axis=1)#.flatten()
     labels_flat = labels#.flatten()
-    #print(list(zip(index, pred_flat)))
     return np.sum(pred_flat == labels_flat) / len(labels_flat)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--train_srl_file", default=None, type=str, required=True)
 parser.add_argument("--dev_srl_file", default=None, type=str, required=True)
-#parser.add_argument("--cuda", default=-1, type=int, required=False) # set to 0
 parser.add_argument("--concat", action='store_true', help="Set this flag if you want to concat evidences.")
 args = parser.parse_args()
 
@@ -65,8 +71,12 @@ model_checkpoint = "bert-base-uncased"
 
 logger.info('Loading srl.')
 
-train_dataset = read_srl_examples(args.train_srl_file)
-dev_dataset = read_srl_examples(args.dev_srl_file)
+if args.concat:
+    train_dataset = read_srl_examples_concat(args.train_srl_file)
+    dev_dataset = read_srl_examples_concat(args.dev_srl_file)
+else:
+    train_dataset = read_srl_examples(args.train_srl_file)
+    dev_dataset = read_srl_examples(args.dev_srl_file)
 
 tokenizer = BertTokenizer.from_pretrained(model_checkpoint, do_lower_case=True)
 
@@ -111,7 +121,7 @@ eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_st
 
 
 # DATALOADER
-batch_size = 16
+batch_size = 10
 train_sampler = RandomSampler(train_data)
 train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=batch_size)# Create the DataLoader for our validation set.
 validation_sampler = SequentialSampler(eval_data)
@@ -186,7 +196,7 @@ for epoch_i in range(0, epochs):
         label_ids = label_ids.to('cpu').numpy()
 
         # Calculate the accuracy for this batch of instances.
-        tmp_eval_accuracy = flat_accuracy(logits, label_ids, index_ids)
+        tmp_eval_accuracy = flat_accuracy(logits, label_ids)
         eval_accuracy += tmp_eval_accuracy
         nb_eval_steps += 1
         if eval_accuracy > best_result:
