@@ -7,6 +7,7 @@ import logging
 import json
 import itertools
 import operator
+import os
 
 from allennlp.predictors import Predictor
 
@@ -88,6 +89,11 @@ parser.add_argument("--aggregate", action='store_true', help="Set this flag if y
 parser.add_argument("--vote", action='store_true', help="Set this flag if you want to make voting system with evidences.")
 args = parser.parse_args()
 
+dir_path = 'experiment-5/outputs/sembert-vote_%s-concat_%s-agg_%s-%dbatch_size-%dseq_length/' % (str(args.vote), str(args.concat), str(args.aggregate), args.batch_size, args.seq_length)
+logger.info(dir_path)
+if not os.path.exists(dir_path):
+    os.mkdir(dir_path)
+
 model_checkpoint = "bert-base-uncased"
 
 logger.info('Loading srl.')
@@ -103,7 +109,9 @@ tokenizer = BertTokenizer.from_pretrained(model_checkpoint, do_lower_case=True)
 
 #predictor = Predictor.from_path("https://storage.googleapis.com/allennlp-public-models/bert-base-srl-2020.11.19.tar.gz")
 
+logger.info('Convert examples to features (TRAIN).')
 train_encoded_dataset = convert_examples_to_features(train_dataset, max_seq_length=args.seq_length, tokenizer=tokenizer, srl_predictor=None)
+logger.info('Convert examples to features (VALIDATION).')
 dev_encoded_dataset = convert_examples_to_features(dev_dataset, max_seq_length=args.seq_length, tokenizer=tokenizer, srl_predictor=None)
 tag_tokenizer = TagTokenizer()
 
@@ -204,7 +212,7 @@ for epoch_i in range(0, epochs):
 
         tr_loss += loss.item()
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0) # check this line
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         optimizer.step()
         scheduler.step()
     avg_train_loss = tr_loss / len(train_dataloader)
@@ -241,6 +249,12 @@ for epoch_i in range(0, epochs):
         if eval_accuracy > best_result:
             best_epoch = epoch_i
             best_result = eval_accuracy
+            torch.save({'epoch': epoch_i,
+                        'model': model.state_dict(),
+                        'best_accuracy': best_result,
+                        'train_losses': tr_loss},
+                        #'dev_losses': dev_loss},
+                       '%s/best.pth.tar' % dir_path)
 
     logger.info("  Accuracy: {0:.2f}".format(eval_accuracy / nb_eval_steps))
     logger.info("  Validation took: {:}".format(format_time(time.time() - t0)))
@@ -252,6 +266,17 @@ for epoch_i in range(0, epochs):
         final_labels, indexes = top_vote(list(zip(index_ids, label_ids)))
         logger.info(np.sum(final_predictions == final_labels) / len(final_labels))
 
+    torch.save({'epoch': epoch_i,
+                'model': model.state_dict(),
+                'best_accuracy': best_result,
+                'train_losses': tr_loss},
+                #'dev_losses': dev_loss},
+               '%s/epoch.%d.pth.tar' % (dir_path, epoch_i))
+
 logger.info("best epoch: %s, result:  %s", str(best_epoch), str(best_result))
 
 logger.info("Training complete!")
+
+fout = open(dir_path + '/results.txt', 'w')
+fout.write('%d\t%lf\r\n' % (best_epoch, best_result))
+fout.close()

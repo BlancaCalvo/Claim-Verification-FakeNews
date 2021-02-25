@@ -165,7 +165,7 @@ def convert_examples_to_features(examples, max_seq_length, tokenizer, srl_predic
         assert len(segment_ids) == max_seq_length
 
         label_id = label_map[example.label]
-        if ex_index < 5:
+        if ex_index < 2:
             logger.info("*** Example ***")
             logger.info("guid: %s" % (example.guid))
             logger.info("Claim Index: %s" % (example.index))
