@@ -689,8 +689,8 @@ class BertModel(BertPreTrainedModel):
         # positions we want to attend and -10000.0 for masked positions.
         # Since we are adding it to the raw scores before the softmax, this is
         # effectively the same as removing these entirely.
-        extended_attention_mask = extended_attention_mask.to(dtype=next(self.parameters()).dtype) # fp16 compatibility
-        extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
+        #extended_attention_mask = extended_attention_mask.to(dtype=next(self.parameters()).dtype) # fp16 compatibility, I deleted this line because it calls for parameters()
+        extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0 #not sure if I should comment this too
 
         embedding_output = self.embeddings(input_ids, token_type_ids)
         encoded_layers = self.encoder(embedding_output,
@@ -1033,6 +1033,111 @@ class BertForSequenceClassificationTag(BertPreTrainedModel):
         else:
             return logits
 
+class BertForSequenceClassificationTagWithAgg(BertPreTrainedModel):
+    def __init__(self, config, num_labels=2, tag_config=None):
+        super(BertForSequenceClassificationTagWithAgg, self).__init__(config)
+        self.num_labels = num_labels
+        self.bert = BertModel(config)
+        self.filter_size = 3
+        self.cnn = CNN_conv1d(config, filter_size=self.filter_size)
+
+        self.activation = nn.Tanh()
+        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        #self.aggregate = SelfAttentionLayer(nfeat * 2, nins, nclaim)
+        if tag_config is not None:
+            hidden_size = config.hidden_size + tag_config.hidden_size
+            self.tag_model = TagEmebedding(tag_config)
+            self.dense = nn.Linear(tag_config.num_aspect * tag_config.hidden_size, tag_config.hidden_size)
+        else:
+            hidden_size = config.hidden_size
+        use_tag = True
+        if use_tag:
+            self.pool = nn.Linear(config.hidden_size + tag_config.hidden_size, config.hidden_size + tag_config.hidden_size)
+            self.classifier = nn.Linear(config.hidden_size + tag_config.hidden_size, num_labels)
+        else:
+            self.pool = nn.Linear(config.hidden_size, config.hidden_size)
+            self.classifier = nn.Linear(hidden_size, num_labels)
+        self.apply(self.init_bert_weights)
+
+    def forward(self, input_ids, index_ids, token_type_ids=None, attention_mask=None, start_end_idx=None, input_tag_ids=None, labels=None):
+        sequence_output, _ = self.bert(input_ids, token_type_ids, attention_mask, output_all_encoded_layers=False)
+        no_cuda = False
+        batch_size, sub_seq_len, dim = sequence_output.size()
+        # sequence_output = sequence_output.unsqueeze(1)
+        start_end_idx = start_end_idx  # batch * seq_len * (start, end)
+        max_seq_len = -1
+        max_word_len = self.filter_size
+        for se_idx in start_end_idx:
+            num_words = 0
+            for item in se_idx:
+                if item[0] != -1 and item[1] != -1:
+                    num_subs = item[1] - item[0] + 1
+                    if num_subs > max_word_len:
+                        max_word_len = num_subs
+                    num_words += 1
+            if num_words > max_seq_len:
+                max_seq_len = num_words
+        assert max_word_len >= self.filter_size
+        batch_start_end_ids = []
+        batch_id = 0
+        for batch in start_end_idx:
+            word_seqs = []
+            offset = batch_id * sub_seq_len
+            for item in batch:
+                if item[0] != -1 and item[1] != -1:
+                    subword_ids = list(range(offset + item[0] + 1, offset + item[1] + 2))  # 0用来做padding了
+                    while len(subword_ids) < max_word_len:
+                        subword_ids.append(0)
+                    word_seqs.append(subword_ids)
+            while (len(word_seqs) < max_seq_len):
+                word_seqs.append([0 for i in range(max_word_len)])
+            batch_start_end_ids.append(word_seqs)
+            batch_id += 1
+
+        batch_start_end_ids = torch.tensor(batch_start_end_ids)
+        batch_start_end_ids = batch_start_end_ids.view(-1)
+        sequence_output = sequence_output.view(-1, dim)
+        sequence_output = torch.cat([sequence_output.new_zeros((1, dim)), sequence_output], dim=0)
+        if not no_cuda:
+            batch_start_end_ids = batch_start_end_ids.cuda()
+        cnn_bert = sequence_output.index_select(0, batch_start_end_ids)
+        cnn_bert = cnn_bert.view(batch_size, max_seq_len, max_word_len, dim)
+        if not no_cuda:
+            cnn_bert = cnn_bert.cuda()
+
+        bert_output = self.cnn(cnn_bert, max_word_len)
+
+        use_tag = True
+        if use_tag:
+            num_aspect = input_tag_ids.size(1)
+            input_tag_ids = input_tag_ids[:,:,:max_seq_len]
+            flat_input_tag_ids = input_tag_ids.view(-1, input_tag_ids.size(-1))
+            # print("flat_que_tag", flat_input_que_tag_ids.size())
+            tag_output = self.tag_model(flat_input_tag_ids, num_aspect)
+            # batch_size, que_len, num_aspect*tag_hidden_size
+            tag_output = tag_output.transpose(1, 2).contiguous().view(batch_size,
+                                                                      max_seq_len, -1)
+            tag_output = self.dense(tag_output)
+            sequence_output = torch.cat((bert_output, tag_output), 2)
+            # print("tag", tag_output.size())
+            # print("bert", bert_output.size())
+
+        else:
+            sequence_output = bert_output
+
+        first_token_tensor = sequence_output[:, 0]
+        pooled_output = self.pool(first_token_tensor)
+        pooled_output = self.activation(pooled_output)
+        pooled_output = self.dropout(pooled_output)
+        # pooled_output = self.aggregate(pooled_output)
+        logits = self.classifier(pooled_output)
+
+        if labels is not None:
+            loss_fct = CrossEntropyLoss()
+            loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
+            return loss
+        else:
+            return logits
 
 class BertForSequenceScoreTag(BertPreTrainedModel):
     def __init__(self, config, tag_config=None):

@@ -11,6 +11,7 @@ import operator
 from allennlp.predictors import Predictor
 
 import torch
+import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 from transformers import AdamW, get_linear_schedule_with_warmup
 from transformers.models.bert.tokenization_bert import BertTokenizer
@@ -77,6 +78,11 @@ def top_vote(l):
 parser = argparse.ArgumentParser()
 parser.add_argument("--train_srl_file", default=None, type=str, required=True)
 parser.add_argument("--dev_srl_file", default=None, type=str, required=True)
+parser.add_argument("--batch_size", default=16, type=int, required=False)
+parser.add_argument("--seq_length", default=300, type=int, required=False)
+parser.add_argument("--cuda_devices", default='-1', type=str, required=True)
+#parser.add_argument("--local_rank", type=int, default=-1, help="local_rank for distributed training on gpus")
+#parser.add_argument("--no_cuda", action='store_true', help="Whether not to use CUDA when available")
 parser.add_argument("--concat", action='store_true', help="Set this flag if you want to concat evidences.")
 parser.add_argument("--aggregate", action='store_true', help="Set this flag if you want to aggregate the evidences.") #does not work yet
 parser.add_argument("--vote", action='store_true', help="Set this flag if you want to make voting system with evidences.")
@@ -97,27 +103,24 @@ tokenizer = BertTokenizer.from_pretrained(model_checkpoint, do_lower_case=True)
 
 #predictor = Predictor.from_path("https://storage.googleapis.com/allennlp-public-models/bert-base-srl-2020.11.19.tar.gz")
 
-train_encoded_dataset = convert_examples_to_features(train_dataset, max_seq_length=300, tokenizer=tokenizer, srl_predictor=None)
-dev_encoded_dataset = convert_examples_to_features(dev_dataset, max_seq_length=300, tokenizer=tokenizer, srl_predictor=None)
+train_encoded_dataset = convert_examples_to_features(train_dataset, max_seq_length=args.seq_length, tokenizer=tokenizer, srl_predictor=None)
+dev_encoded_dataset = convert_examples_to_features(dev_dataset, max_seq_length=args.seq_length, tokenizer=tokenizer, srl_predictor=None)
 tag_tokenizer = TagTokenizer()
 
 num_labels = 3
 max_num_aspect = 3
 vocab_size = len(tag_tokenizer.ids_to_tags)
-tag_config = TagConfig(tag_vocab_size=vocab_size,
-                           hidden_size=10,
-                           layer_num=1,
-                           output_dim=10,
-                           dropout_prob=0.1,
-                           num_aspect=max_num_aspect)
+tag_config = TagConfig(tag_vocab_size=vocab_size, hidden_size=10, layer_num=1, output_dim=10, dropout_prob=0.1, num_aspect=max_num_aspect)
 
+logger.info('Loading the model.')
 if args.aggregate:
     model = BertForSequenceClassificationTagWithAgg.from_pretrained(model_checkpoint, num_labels=num_labels, tag_config=tag_config)
 else:
     model = BertForSequenceClassificationTag.from_pretrained(model_checkpoint, num_labels = num_labels,tag_config=tag_config)
 
-# CREATE TENSOR DATASET
-train_features = transform_tag_features(3, train_encoded_dataset, tag_tokenizer, max_seq_length=300) #max_num_aspect=3, check this
+logger.info('Create tensors.')
+# CREATE TENSOR DATASETS
+train_features = transform_tag_features(3, train_encoded_dataset, tag_tokenizer, max_seq_length=args.seq_length) #max_num_aspect=3, check this
 all_input_ids = torch.tensor([f.input_ids for f in train_features], dtype=torch.long)
 all_input_mask = torch.tensor([f.input_mask for f in train_features], dtype=torch.long)
 all_segment_ids = torch.tensor([f.segment_ids for f in train_features], dtype=torch.long)
@@ -127,7 +130,7 @@ all_input_tag_ids = torch.tensor([f.input_tag_ids for f in train_features], dtyp
 all_train_indexes = torch.tensor([f.index_id for f in train_features], dtype=torch.long)
 train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_start_end_idx, all_input_tag_ids, all_label_ids, all_train_indexes)
 
-eval_features = transform_tag_features(3, dev_encoded_dataset, tag_tokenizer, max_seq_length=300)
+eval_features = transform_tag_features(3, dev_encoded_dataset, tag_tokenizer, max_seq_length=args.seq_length)
 all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
 all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
 all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
@@ -137,9 +140,8 @@ all_input_tag_ids = torch.tensor([f.input_tag_ids for f in eval_features], dtype
 all_dev_indexes = torch.tensor([f.index_id for f in eval_features], dtype=torch.long)
 eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_start_end_idx, all_input_tag_ids, all_label_ids, all_dev_indexes)
 
-
 # DATALOADER
-batch_size = 10
+batch_size = args.batch_size
 train_sampler = RandomSampler(train_data)
 train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=batch_size)# Create the DataLoader for our validation set.
 validation_sampler = SequentialSampler(eval_data)
@@ -151,10 +153,20 @@ nb_tr_steps = 0
 tr_loss = 0
 best_epoch = 0
 best_result = 0.0
-cuda = 0
 epochs = 4
 learning_rate = 2e-5
-device = torch.device("cuda")
+
+class ExtendedDataParallel(nn.DataParallel): # creates a dataparallel but retrieves parameters of the former model
+    def __getattr__(self, name):
+        try:
+            return super().__getattr__(name)
+        except AttributeError:
+            return getattr(self.module, name)
+
+cuda_devices = list(map(int, args.cuda_devices.split(',')))
+
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+model = ExtendedDataParallel(model, device_ids=cuda_devices)
 
 optimizer = AdamW(model.parameters(),lr=learning_rate, eps=1e-8)
 total_steps = len(train_dataloader) * epochs
@@ -177,7 +189,7 @@ for epoch_i in range(0, epochs):
     tr_loss = 0
     nb_tr_examples, nb_tr_steps = 0, 0
     for step, batch in enumerate(train_dataloader):
-        if step % 40 == 0 and not step == 0: # Progress update every 40 batches.
+        if step % 500 == 0 and not step == 0: # Progress update every 500 batches.
             elapsed = format_time(time.time() - t0)
             logger.info('  Batch {:>5,}  of  {:>5,}.    Elapsed: {:}.'.format(step, len(train_dataloader), elapsed))
         batch = tuple(t.to(device) for t in batch)
@@ -186,6 +198,9 @@ for epoch_i in range(0, epochs):
             loss = model(input_ids, index_ids, segment_ids, input_mask, start_end_idx, input_tag_ids, label_ids)
         else:
             loss = model(input_ids, segment_ids, input_mask, start_end_idx, input_tag_ids, label_ids)
+
+        if len(cuda_devices) > 1:
+            loss = loss.mean()
 
         tr_loss += loss.item()
         loss.backward()
@@ -235,7 +250,7 @@ for epoch_i in range(0, epochs):
         predictions = np.argmax(logits, axis=1)
         final_predictions, indexes = top_vote(list(zip(index_ids, predictions)))
         final_labels, indexes = top_vote(list(zip(index_ids, label_ids)))
-        logger.info('Claim Verification Accuracy:', np.sum(final_predictions == final_labels) / len(final_labels))
+        logger.info(np.sum(final_predictions == final_labels) / len(final_labels))
 
 logger.info("best epoch: %s, result:  %s", str(best_epoch), str(best_result))
 
