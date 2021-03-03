@@ -76,6 +76,8 @@ def convert_examples_to_features(examples, max_seq_length, tokenizer, srl_predic
     max_aspect = 0
     features = []
     for (ex_index, example) in enumerate(examples):
+        if (ex_index % 1000)==0:
+            logger.info("converting example %s of %s" % (ex_index, len(examples)))
         tokens_a = []
         tokens_b = []
         tok_to_orig_index_a = []  # subword_token_index -> org_word_index
@@ -105,14 +107,14 @@ def convert_examples_to_features(examples, max_seq_length, tokenizer, srl_predic
                     tok_to_orig_index_b.append(i)
                     tokens_b.append(sub_token)
             #print(len(tokens_a+tokens_b), len(tokens_a),len(tokens_b))
-            if len(tokens_a+tokens_b) > max_seq_length-3:
-                print("too long!!!!",len(tokens_a+tokens_b), len(tokens_a),len(tokens_b))
+            #if len(tokens_a+tokens_b) > max_seq_length-3:
+            #    print("too long!!!!",len(tokens_a+tokens_b), len(tokens_a),len(tokens_b))
             # Account for [CLS], [SEP], [SEP] with "- 3"
             _truncate_seq_pair(tokens_a, tokens_b, tok_to_orig_index_a, tok_to_orig_index_b, max_seq_length - 3)
         else:
             # Account for [CLS] and [SEP] with "- 2"
             if len(tokens_a) > max_seq_length - 2:
-                print("too long!!!!", len(tokens_a))
+                #print("too long!!!!", len(tokens_a))
                 tokens_a = tokens_a[:(max_seq_length - 2)]
                 tok_to_orig_index_a=tok_to_orig_index_a[:max_seq_length - 1] #already has the index for [CLS]
         tok_to_orig_index_a.append(tok_to_orig_index_a[-1] + 1)  # [SEP]
