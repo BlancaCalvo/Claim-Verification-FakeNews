@@ -1,5 +1,0 @@
-
-Annotator:
-
-python Claim-Verification-FakeNews/experiment-4/annotator.py Claim-Verification-FakeNews/data/MultiFC/train_data.tsv MultiFC
-
