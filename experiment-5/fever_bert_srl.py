@@ -1,5 +1,5 @@
 import os
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+#os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 import numpy as np
 import random
@@ -231,6 +231,7 @@ if __name__ == "__main__":
         model.eval()
         eval_loss, eval_accuracy = 0, 0
         nb_eval_steps, nb_eval_examples = 0, 0
+
         for batch in validation_dataloader:
             batch = tuple(t.to(device) for t in batch)
             input_ids, input_mask, segment_ids, start_end_idx, input_tag_ids, label_ids, index_ids = batch
@@ -245,6 +246,7 @@ if __name__ == "__main__":
             logits = logits.detach().cpu().numpy()
             label_ids = label_ids.to('cpu').numpy()
 
+
             # Calculate the accuracy for this batch of instances.
             tmp_eval_accuracy = flat_accuracy(logits, label_ids)
             eval_accuracy += tmp_eval_accuracy
@@ -255,9 +257,16 @@ if __name__ == "__main__":
                 torch.save({'epoch': epoch_i,
                             'model': model.state_dict(),
                             'best_accuracy': best_result,
-                            'train_losses': tr_loss},
-                           #'dev_losses': dev_loss},
+                            'train_losses': tr_loss,
+                           'eval_losses': eval_loss},
                            '%s/best.pth.tar' % dir_path)
+
+                fout = open(dir_path + '/dev-results.tsv', 'w')
+                for i in range(logits.shape[0]):
+                    # fout.write('\t'.join(['%.4lf' % num for num in logits[i]]) + '\r\n')
+                    fout.write('{}\t{}\t{}\t{}\t{}\n'.format(logits[i][0], logits[i][1], logits[i][2], label_ids[i],
+                                                      index_ids[i]))
+                fout.close()
 
         logger.info("  Accuracy: {0:.2f}".format(eval_accuracy / nb_eval_steps))
         logger.info("  Validation took: {:}".format(format_time(time.time() - t0)))
@@ -272,8 +281,8 @@ if __name__ == "__main__":
         torch.save({'epoch': epoch_i,
                     'model': model.state_dict(),
                     'best_accuracy': best_result,
-                    'train_losses': tr_loss},
-                   #'dev_losses': dev_loss},
+                    'train_losses': tr_loss,
+                   'eval_losses': eval_loss},
                    '%s/epoch.%d.pth.tar' % (dir_path, epoch_i))
 
     logger.info("best epoch: %s, result:  %s", str(best_epoch), str(best_result))

@@ -6,6 +6,7 @@ from torch.utils.data import TensorDataset, DataLoader, RandomSampler, Sequentia
 import random
 import time
 import datetime
+import os
 
 def format_time(elapsed):
     elapsed_rounded = int(round((elapsed)))
@@ -45,6 +46,8 @@ model_checkpoint = "bert-base-uncased"
 
 train_dataset = read_examples('data/gear/gear-train-set-0_001.tsv')
 dev_dataset = read_examples('data/gear/gear-dev-set-0_001.tsv')
+#train_dataset = read_examples('data/gear/train_trial.tsv')
+#dev_dataset = read_examples('data/gear/trial.tsv')
 
 tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
 
@@ -88,7 +91,9 @@ scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_t
 model.to(device)
 best_epoch = 0
 best_result = 0.0
-dir_path = 'experiment-5/outputs/bert-base/'
+dir_path = 'experiment-5/outputs/bert-base'
+if not os.path.exists(dir_path):
+    os.mkdir(dir_path)
 
 # TRAINING LOOP
 random.seed(seed_val)
@@ -101,7 +106,7 @@ for epoch_i in range(0, epochs):
     print('======== Epoch {:} / {:} ========'.format(epoch_i + 1, epochs))
     print('Training...')
     t0 = time.time()
-    total_loss = 0
+    tr_loss = 0
     model.train()
     for step, batch in enumerate(train_dataloader):
         if step % 40 == 0 and not step == 0: # Progress update every 40 batches.
@@ -114,12 +119,12 @@ for epoch_i in range(0, epochs):
         outputs = model(b_input_ids, attention_mask=b_input_mask, labels=b_labels)
 
         loss = outputs[0]
-        total_loss += loss.item()
+        tr_loss += loss.item()
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         optimizer.step()
         scheduler.step()
-    avg_train_loss = total_loss / len(train_dataloader)
+    avg_train_loss = tr_loss / len(train_dataloader)
 
     # Store the loss value for plotting the learning curve.
     loss_values.append(avg_train_loss)
@@ -156,21 +161,21 @@ for epoch_i in range(0, epochs):
             torch.save({'epoch': epoch_i,
                         'model': model.state_dict(),
                         'best_accuracy': best_result,
-                        'train_losses': tr_loss},
-                       # 'dev_losses': dev_loss},
+                        'train_losses': tr_loss,
+                        'eval_losses': eval_loss},
                        '%s/best.pth.tar' % dir_path)
 
-            fout = open(dir_path + 'dev-results.tsv', 'w')
+            fout = open(dir_path + '/dev-results.tsv', 'w')
             for i in range(logits.shape[0]):
                 # fout.write('\t'.join(['%.4lf' % num for num in logits[i]]) + '\r\n')
-                fout.write('{}\t{}\t{}\t{}\t{}\n'.format(logits[i][0], logits[i][1], logits[i][2], label_ids[i],
-                                                         index_ids[i]))
+                fout.write('{}\t{}\t{}\t{}\n'.format(logits[i][0], logits[i][1], logits[i][2], label_ids[i]))
             fout.close()
 
         torch.save({'epoch': epoch_i,
                     'model': model.state_dict(),
                     'best_accuracy': best_result,
-                    'train_losses': tr_loss},
+                    'train_losses': tr_loss,
+                    'eval_losses': eval_loss},
                    '%s/epoch.%d.pth.tar' % (dir_path, epoch_i))
 
 
