@@ -23,7 +23,7 @@ from transformers.models.bert.tokenization_bert import BertTokenizer
 from tagged_features import InputExample, convert_examples_to_features, transform_tag_features
 from tag_model.tag_tokenization import TagTokenizer
 from tag_model.modeling import TagConfig
-from pytorch_pretrained_bert.modeling import BertForSequenceClassificationTag, BertForSequenceClassificationTagWithAgg
+from sembert.modeling import BertForSequenceClassificationTag, BertForSequenceClassificationTagWithAgg
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
