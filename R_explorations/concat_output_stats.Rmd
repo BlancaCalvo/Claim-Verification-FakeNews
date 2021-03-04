@@ -1,0 +1,75 @@
+---
+title: "Model results"
+output: html_notebook
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = 'C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/')
+library(dplyr)
+library(ggplot2)
+library(compare)
+
+#setwd("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/")
+# REMEMBER: the working directory of the R sessions and the working directory of the notebook are different things!!!!
+
+```
+
+```{r import_results}
+sembert_output<- read.csv("experiment-5/outputs/sembert_concat_1/dev-results.tsv", header = FALSE, sep='\t')
+
+```
+
+```{r check_acc}
+
+sembert_results <- sembert_output %>%
+  rowwise() %>%
+  mutate(output= which.max(list(V1,V2,V3))-1)%>%
+  mutate(right = sum(V4==output, na.rm=T))
+
+print(sum(sembert_results$right)/nrow(sembert_results))
+
+```
+
+```{r import_results}
+bert_output<- read.csv("experiment-5/outputs/bert_base/dev-results.tsv", header = FALSE, sep='\t')
+
+```
+
+```{r check_acc}
+
+bert_results <- bert_output %>%
+  rowwise() %>%
+  mutate(output= which.max(list(V1,V2,V3))-1)%>%
+  mutate(right = sum(V4==output, na.rm=T))
+
+print(sum(bert_results$right)/nrow(bert_results))
+```
+```{r add_indx}
+bert_results <- cbind(head(bert_results, -1), V5 = sembert_results$V5) # I delete one row to match
+
+```
+
+
+```{r add_indx}
+
+bert_right = bert_results$right
+sembert_right = sembert_results$right
+
+differing_rows = which(bert_right != sembert_right, arr.ind = FALSE)
+
+all = merge(bert_results, sembert_results, by="V5")
+
+all$ID <- seq.int(nrow(all))
+
+differing <- all %>%
+  filter(ID %in% differing_rows)
+
+```
+
+
+
+
+
+
+
