@@ -23,7 +23,7 @@ from transformers.models.bert.tokenization_bert import BertTokenizer
 from tagged_features import InputExample, convert_examples_to_features, transform_tag_features
 from tag_model.tag_tokenization import TagTokenizer
 from tag_model.modeling import TagConfig
-from sembert.modeling import BertForSequenceClassificationTag, BertForSequenceClassificationTagWithAgg
+from pytorch_pretrained_bert.modeling import BertForSequenceClassificationTag, BertForSequenceClassificationTagWithAgg
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
@@ -84,7 +84,7 @@ if __name__ == "__main__":
     parser.add_argument("--dev_srl_file", default=None, type=str, required=False)
     parser.add_argument("--batch_size", default=16, type=int, required=False)
     parser.add_argument("--seq_length", default=300, type=int, required=False)
-    parser.add_argument("--cuda_devices", default='0', type=str, required=False)
+    parser.add_argument("--cuda_devices", default='-1', type=str, required=False)
     #parser.add_argument("--local_rank", type=int, default=-1, help="local_rank for distributed training on gpus")
     #parser.add_argument("--no_cuda", action='store_true', help="Whether not to use CUDA when available")
     parser.add_argument("--concat", action='store_true', help="Set this flag if you want to concat evidences.")

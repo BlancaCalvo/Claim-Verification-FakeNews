@@ -68,8 +68,29 @@ differing <- all %>%
 ```
 
 
+```{r import_results}
+#dev<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/gear-dev-data.tsv", header = FALSE, sep='\t')
 
+dev <- read.table("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/gear-dev-data.tsv", sep="\t", header=FALSE, comment.char="#",
+                  na.strings=".", stringsAsFactors=FALSE,
+                  quote="", fill=TRUE)
 
+all_dev = merge(differing, head(dev, -1), by.x = "V5", by.y = "V1")
 
+```
 
+```{r import_results}
+all_dev %>%
+  group_by(right.y)%>%
+  summarise(len_claim=mean(length(V3)), len_evidences = mean(length(V4)+length(V5)+length(V6)+length(V7)+length(V8)))
 
+```
+
+```{r import_results}
+library("rjson")
+json_data <- fromJSON(paste(readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/dev_srl_all.json"), collapse=""))
+
+```
+```{r import_results}
+
+```
