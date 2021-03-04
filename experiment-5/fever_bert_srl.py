@@ -262,11 +262,11 @@ if __name__ == "__main__":
                            '%s/best.pth.tar' % dir_path)
 
                 fout = open(dir_path + '/dev-results.tsv', 'w')
-                for i in range(logits.shape[0]):
-                    # fout.write('\t'.join(['%.4lf' % num for num in logits[i]]) + '\r\n')
-                    fout.write('{}\t{}\t{}\t{}\t{}\n'.format(logits[i][0], logits[i][1], logits[i][2], label_ids[i],
+            for i in range(logits.shape[0]):
+                # fout.write('\t'.join(['%.4lf' % num for num in logits[i]]) + '\r\n')
+                fout.write('{}\t{}\t{}\t{}\t{}\n'.format(logits[i][0], logits[i][1], logits[i][2], label_ids[i],
                                                       index_ids[i]))
-                fout.close()
+            fout.close()
 
         logger.info("  Accuracy: {0:.2f}".format(eval_accuracy / nb_eval_steps))
         logger.info("  Validation took: {:}".format(format_time(time.time() - t0)))
