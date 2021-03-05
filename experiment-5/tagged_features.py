@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class InputExample(object):
     """A single training/test example for simple sequence classification."""
 
-    def __init__(self, guid, text_a, text_b=None, label=None, index=None):
+    def __init__(self, guid, text_a, text_b=None, label=None, index=None, is_claim=False):
         """Constructs a InputExample.
 
         Args:
@@ -29,11 +29,12 @@ class InputExample(object):
         self.text_b = text_b
         self.label = label
         self.index = index
+        self.is_claim = is_claim
 
 class InputFeatures(object):
     """A single set of features of data."""
 
-    def __init__(self, input_ids, input_mask, segment_ids, token_tag_sequence_a, token_tag_sequence_b, len_seq_a, len_seq_b, input_tag_ids, input_tag_verbs, input_tag_len, orig_to_token_split_idx, label_id, index_id):
+    def __init__(self, input_ids, input_mask, segment_ids, token_tag_sequence_a, token_tag_sequence_b, len_seq_a, len_seq_b, input_tag_ids, input_tag_verbs, input_tag_len, orig_to_token_split_idx, label_id, index_id, is_claim):
         self.input_ids = input_ids
         self.input_mask = input_mask
         self.segment_ids = segment_ids
@@ -47,6 +48,7 @@ class InputFeatures(object):
         self.orig_to_token_split_idx = orig_to_token_split_idx
         self.label_id = label_id
         self.index_id = index_id
+        self.is_claim = is_claim
 
 def _truncate_seq_pair(tokens_a, tokens_b, tok_to_orig_index_a, tok_to_orig_index_b, max_length):
     """Truncates a sequence pair in place to the maximum length."""
@@ -67,7 +69,7 @@ def _truncate_seq_pair(tokens_a, tokens_b, tok_to_orig_index_a, tok_to_orig_inde
             tok_to_orig_index_b.pop()
 
 tag_vocab = []
-def convert_examples_to_features(examples, max_seq_length, tokenizer, srl_predictor):
+def convert_examples_to_features(examples, max_seq_length, tokenizer, srl_predictor, is_claim=False):
     """Loads a data file into a list of `InputBatch`s."""
 
     #label_map = {label : i for i, label in enumerate(examples.label)}
@@ -192,7 +194,9 @@ def convert_examples_to_features(examples, max_seq_length, tokenizer, srl_predic
                               input_tag_len = None,
                               orig_to_token_split_idx=orig_to_token_split_idx,
                               label_id=label_id,
-                              index_id = int(example.index)))
+                              index_id = int(example.index),
+                              is_claim = is_claim))
+
     return features
 
 def transform_tag_features(max_num_aspect, features, tag_tokenizer, max_seq_length):

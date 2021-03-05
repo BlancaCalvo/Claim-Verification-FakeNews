@@ -90,9 +90,9 @@ class GEAR(nn.Module):
 
         # if we add claim a graph features we have to add here too the attention coefficients for claims
         # does not work yet!
-        if self.nclaim > 1:
-            for i in range(self.nlayer):
-                claims = self.claim_attentions[i](claims)
+        #if self.nclaim > 1:
+        #    for i in range(self.nlayer):
+        #        claims = self.claim_attentions[i](claims)
 
         if self.pool == 'att':
             inputs = self.aggregate(inputs, -1, claims) #attention coefficient of evidence in relation to claim
