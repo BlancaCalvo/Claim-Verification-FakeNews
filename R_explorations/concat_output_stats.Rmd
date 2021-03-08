@@ -9,6 +9,8 @@ knitr::opts_knit$set(root.dir = 'C:/Users/bcalvo/Box/bcalvo/Claim-Verification-F
 library(dplyr)
 library(ggplot2)
 library(compare)
+library(rjson)
+library(data.table)
 
 #setwd("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/")
 # REMEMBER: the working directory of the R sessions and the working directory of the notebook are different things!!!!
@@ -92,5 +94,69 @@ json_data <- fromJSON(paste(readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verifica
 
 ```
 ```{r import_results}
+
+weights_12 <- fromJSON(paste(readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_12/weights.json"), collapse=""))
+
+```
+
+```{r import_results}
+
+embeddings <- weights_12$module.tag_model.embed.tag_embeddings.weight
+
+tags <- c('[PAD]','[CLS]','[SEP]','B-V','I-V','B-ARG0','I-ARG0','B-ARG1','I-ARG1','B-ARG2','I-ARG2','B-ARG4','I-ARG4','B-ARGM-TMP','I-ARGM-TMP','B-ARGM-LOC','I-ARGM-LOC','B-ARGM-CAU','I-ARGM-CAU','B-ARGM-PRP','I-ARGM-PRP','O')
+
+
+df  <-  as.data.frame(matrix(unlist(embeddings), nrow=length(unlist(embeddings[1]))), col.names=tags)
+
+colnames(df) <- tags
+
+# [(0, '[PAD]'), (1, '[CLS]'), (2, '[SEP]'), (3, 'B-V'), (4, 'I-V'), (5, 'B-ARG0'), (6, 'I-ARG0'), (7, 'B-ARG1'), (8, 'I-ARG1'), (9, 'B-ARG2'), (10, 'I-ARG2'), (11, 'B-ARG4'), (12, 'I-ARG4'), (13, 'B-ARGM-TMP'), (14, 'I-ARGM-TMP'), (15, 'B-ARGM-LOC'), (16, 'I-ARGM-LOC'), (17, 'B-ARGM-CAU'), (18, 'I-ARGM-CAU'), (19, 'B-ARGM-PRP'), (20, 'I-ARGM-PRP'), (21, 'O')]
+
+```
+
+```{r plot_embeddings}
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+
+df %>%
+  t()%>%
+  pair
+
+transposed <-df %>%
+  t()%>%
+  data.frame()
+
+transposed <- setDT(transposed, keep.rownames = TRUE)[]
+
+transposed%>%
+  gather(key, value, -rn) %>%
+  ggplot(aes(x = value, y = value)) + 
+  geom_point() +
+  facet_wrap(~key)
+
+transposed.m <- melt(transposed, "rn")
+
+ggplot(transposed.m, aes(value, value)) + 
+  geom_point() + 
+  facet_wrap(~variable, scales = "free")
+
+```
+
+
+
+```{r import_results}
+sembert_12_output<- read.csv("experiment-5/outputs/sembert_12/dev-results.tsv", header = FALSE, sep='\t')
+
+```
+
+```{r check_acc}
+
+sembert_12_results <- sembert_12_output %>%
+  rowwise() %>%
+  mutate(output= which.max(list(V1,V2,V3))-1)%>%
+  mutate(right = sum(V4==output, na.rm=T))
+
+print(sum(sembert_12_results$right)/nrow(sembert_12_results))
 
 ```

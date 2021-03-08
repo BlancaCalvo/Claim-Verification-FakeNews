@@ -13,7 +13,7 @@ from torch.utils.data import TensorDataset, DataLoader, RandomSampler, Sequentia
 from tagged_features import InputExample, convert_examples_to_features, transform_tag_features
 from tag_model.tag_tokenization import TagTokenizer
 from tag_model.modeling import TagConfig
-from pytorch_pretrained_bert.modeling import BertForSequenceClassificationTag, BertForSequenceClassificationTagWithAgg
+from sembert.modeling import BertForSequenceClassificationTag, BertForSequenceClassificationTagWithAgg
 
 #from utils import load_bert_features_claim_test
 #from models import GEAR
@@ -25,6 +25,7 @@ parser.add_argument("--dev_features", default='data/srl_features/dev_srl_all.jso
 parser.add_argument("--concat", action='store_true', help="Set this flag if you want to concat evidences.")
 parser.add_argument("--aggregate", action='store_true', help="Set this flag if you want to aggregate the evidences.") #does not work yet
 parser.add_argument("--vote", action='store_true', help="Set this flag if you want to make voting system with evidences.")
+parser.add_argument("--max_num_aspect", default=3, type=int, required=False)
 
 parser.add_argument("--seq_length", default=300, type=int, required=False)
 parser.add_argument("--batch_size", default=16, type=int, required=False)
@@ -32,10 +33,10 @@ parser.add_argument("--batch_size", default=16, type=int, required=False)
 
 args = parser.parse_args()
 #args.cuda = not args.no_cuda and torch.cuda.is_available()
-seed = 1995
-random.seed(seed)
-np.random.seed(seed)
-torch.manual_seed(seed)
+#seed = 1995
+#random.seed(seed)
+#np.random.seed(seed)
+#torch.manual_seed(seed)
 
 if args.concat:
     dev_dataset = read_srl_examples_concat(args.dev_features)
@@ -51,7 +52,7 @@ tag_tokenizer = TagTokenizer()
 
 # dataloader
 batch_size = args.batch_size
-eval_features = transform_tag_features(3, dev_encoded_dataset, tag_tokenizer, max_seq_length=args.seq_length)
+eval_features = transform_tag_features(args.max_num_aspect, dev_encoded_dataset, tag_tokenizer, max_seq_length=args.seq_length)
 all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
 all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
 all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
@@ -65,23 +66,22 @@ dev_dataloader = DataLoader(eval_data, sampler=validation_sampler, batch_size=ba
 
 
 num_labels = 3
-max_num_aspect = 3
 vocab_size = len(tag_tokenizer.ids_to_tags)
-tag_config = TagConfig(tag_vocab_size=vocab_size, hidden_size=10, layer_num=1, output_dim=10, dropout_prob=0.1, num_aspect=max_num_aspect)
+tag_config = TagConfig(tag_vocab_size=vocab_size, hidden_size=10, layer_num=1, output_dim=10, dropout_prob=0.1, num_aspect=args.max_num_aspect)
 
 if args.aggregate:
     model = BertForSequenceClassificationTagWithAgg.from_pretrained(model_checkpoint, num_labels=num_labels, tag_config=tag_config)
 else:
     model = BertForSequenceClassificationTag.from_pretrained(model_checkpoint, num_labels = num_labels,tag_config=tag_config)
 
-seeds = [314]
+seeds = [1995]
 
 device = "cuda:0"
 model.to(device)
 
 for seed in seeds:
-    #base_dir = 'experiment-5/outputs/sembert-vote_%s-concat_%s-agg_%s-%dbatch_size-%dseq_length/' % (str(args.vote), str(args.concat), str(args.aggregate), args.batch_size, args.seq_length)
-    base_dir = 'experiment-5/outputs/bert_base/'
+    base_dir = 'experiment-5/outputs/sembert-vote_%s-concat_%s-agg_%s-%dbatch_size-%dseq_length-%dn_aspect//' % (str(args.vote), str(args.concat), str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect)
+    #base_dir = 'experiment-5/outputs/bert_base/'
     if not os.path.exists(base_dir):
         print('%s results do not exist!' % base_dir)
         continue
@@ -95,6 +95,8 @@ for seed in seeds:
     for i in checkpoint['model'].keys():
         checkpoint_new_names[i] = i[7:]
     new_checkpoint['model'] = dict((checkpoint_new_names[key], value) for (key, value) in checkpoint['model'].items())
+    #print(new_checkpoint['model']['dense.weight'].shape)
+    #print(new_checkpoint['model']['dense.bias'].shape)
 
 
     model.load_state_dict(new_checkpoint['model'])

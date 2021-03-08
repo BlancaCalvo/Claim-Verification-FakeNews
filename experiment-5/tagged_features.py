@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class InputExample(object):
     """A single training/test example for simple sequence classification."""
 
-    def __init__(self, guid, text_a, text_b=None, label=None, index=None, is_claim=False):
+    def __init__(self, guid, text_a, text_b=None, label=None, index=None):
         """Constructs a InputExample.
 
         Args:
@@ -29,12 +29,11 @@ class InputExample(object):
         self.text_b = text_b
         self.label = label
         self.index = index
-        self.is_claim = is_claim
 
 class InputFeatures(object):
     """A single set of features of data."""
 
-    def __init__(self, input_ids, input_mask, segment_ids, token_tag_sequence_a, token_tag_sequence_b, len_seq_a, len_seq_b, input_tag_ids, input_tag_verbs, input_tag_len, orig_to_token_split_idx, label_id, index_id, is_claim):
+    def __init__(self, input_ids, input_mask, segment_ids, token_tag_sequence_a, token_tag_sequence_b, len_seq_a, len_seq_b, input_tag_ids, input_tag_verbs, input_tag_len, orig_to_token_split_idx, label_id, index_id):
         self.input_ids = input_ids
         self.input_mask = input_mask
         self.segment_ids = segment_ids
@@ -48,7 +47,6 @@ class InputFeatures(object):
         self.orig_to_token_split_idx = orig_to_token_split_idx
         self.label_id = label_id
         self.index_id = index_id
-        self.is_claim = is_claim
 
 def _truncate_seq_pair(tokens_a, tokens_b, tok_to_orig_index_a, tok_to_orig_index_b, max_length):
     """Truncates a sequence pair in place to the maximum length."""
@@ -69,7 +67,7 @@ def _truncate_seq_pair(tokens_a, tokens_b, tok_to_orig_index_a, tok_to_orig_inde
             tok_to_orig_index_b.pop()
 
 tag_vocab = []
-def convert_examples_to_features(examples, max_seq_length, tokenizer, srl_predictor, is_claim=False):
+def convert_examples_to_features(examples, max_seq_length, tokenizer, srl_predictor):
     """Loads a data file into a list of `InputBatch`s."""
 
     #label_map = {label : i for i, label in enumerate(examples.label)}
@@ -83,10 +81,11 @@ def convert_examples_to_features(examples, max_seq_length, tokenizer, srl_predic
         tokens_a = []
         tokens_b = []
         tok_to_orig_index_a = []  # subword_token_index -> org_word_index
-        tag_sequence = get_tags(srl_predictor, example.text_a, tag_vocab)
+        tag_sequence = get_tags(srl_predictor, example.text_a, tag_vocab) #gets the tagged text
         # (['Thus', ',', 'with', 'respect', 'to', 'the', 'litigation', 'services', 'Congress', 'has', 'funded', ',', 'there', 'is', 'no', 'alternative', 'channel', 'for', 'expression', 'of', 'the', 'advocacy', 'Congress', 'seeks', 'to', 'restrict', '.'], [['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-V', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'], ['O', 'O', 'O', 'O', 'O', 'B-ARG1', 'I-ARG1', 'I-ARG1', 'B-ARG0', 'O', 'B-V', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'], ['B-ARGM-DIS', 'O', 'B-ARGM-ADV', 'I-ARGM-ADV', 'I-ARGM-ADV', 'I-ARGM-ADV', 'I-ARGM-ADV', 'I-ARGM-ADV', 'I-ARGM-ADV', 'I-ARGM-ADV', 'I-ARGM-ADV', 'O', 'O', 'B-V', 'B-ARG1', 'I-ARG1', 'I-ARG1', 'I-ARG1', 'I-ARG1', 'I-ARG1', 'I-ARG1', 'I-ARG1', 'I-ARG1', 'I-ARG1', 'I-ARG1', 'I-ARG1', 'O'], ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-ARG0', 'B-V', 'B-ARG1', 'I-ARG1', 'O'], ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-ARG1', 'I-ARG1', 'B-ARG0', 'O', 'O', 'B-V', 'O']])
         token_tag_sequence_a = QueryTagSequence(tag_sequence[0], tag_sequence[1])
         tokens_a_org = tag_sequence[0]
+        #print('N of prop claim: ', len(tag_sequence[1]))
         if len(tag_sequence[1])> max_aspect:
             max_aspect = len(tag_sequence[1])
         tok_to_orig_index_a.append(0)  # [CLS]
@@ -101,6 +100,7 @@ def convert_examples_to_features(examples, max_seq_length, tokenizer, srl_predic
             tag_sequence = get_tags(srl_predictor, example.text_b, tag_vocab)
             token_tag_sequence_b = QueryTagSequence(tag_sequence[0], tag_sequence[1])
             tokens_b_org = tag_sequence[0]
+            #print('N of prop evidence: ', len(tag_sequence[1]))
             if len(tag_sequence[1]) > max_aspect:
                 max_aspect = len(tag_sequence[1])
             for (i, token) in enumerate(tokens_b_org):
@@ -194,8 +194,7 @@ def convert_examples_to_features(examples, max_seq_length, tokenizer, srl_predic
                               input_tag_len = None,
                               orig_to_token_split_idx=orig_to_token_split_idx,
                               label_id=label_id,
-                              index_id = int(example.index),
-                              is_claim = is_claim))
+                              index_id = int(example.index)))
 
     return features
 
@@ -204,15 +203,19 @@ def transform_tag_features(max_num_aspect, features, tag_tokenizer, max_seq_leng
     #print("vocab_size: ",len(tag_vocab))
     # max_num_aspect = 3
     new_features = []
+    lengths_a = []
+    lengths_b = []
     for example in features:
         token_tag_sequence_a = example.token_tag_sequence_a
         len_seq_a = example.len_seq_a
+        lengths_a.append(token_tag_sequence_a.length())
         token_tag_sequence_a.aspect_padding(max_num_aspect)
         tag_ids_list_a = token_tag_sequence_a.convert_to_ids(tag_tokenizer)
         input_tag_ids = []
         if example.token_tag_sequence_b != None:
             token_tag_sequence_b = example.token_tag_sequence_b
-            token_tag_sequence_b.aspect_padding(max_num_aspect)
+            lengths_b.append(token_tag_sequence_b.length())
+            token_tag_sequence_b.aspect_padding(max_num_aspect) # this should shortens the num of propositions to max_aspect, but it shows later
             tag_ids_list_b = token_tag_sequence_b.convert_to_ids(tag_tokenizer)
             len_seq_b = example.len_seq_b
             input_que_tag_ids = []
@@ -239,4 +242,6 @@ def transform_tag_features(max_num_aspect, features, tag_tokenizer, max_seq_leng
                 # construct input doc tag ids with same length as input ids
         example.input_tag_ids = input_tag_ids
         new_features.append(example)
+    print('N propositions claims: ', sum(lengths_a) / len(lengths_a))
+    print('N propositions evidences: ', sum(lengths_b) / len(lengths_b))
     return new_features

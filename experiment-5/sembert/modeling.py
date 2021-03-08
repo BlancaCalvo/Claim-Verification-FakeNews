@@ -1012,6 +1012,7 @@ class BertForSequenceClassificationTag(BertPreTrainedModel):
             # batch_size, que_len, num_aspect*tag_hidden_size
             tag_output = tag_output.transpose(1, 2).contiguous().view(batch_size,
                                                                       max_seq_len, -1)
+            print(self.dense)
             tag_output = self.dense(tag_output)
             sequence_output = torch.cat((bert_output, tag_output), 2)
             # print("tag", tag_output.size())
@@ -1561,6 +1562,70 @@ class BertForSequenceClassificationTagExplained(BertPreTrainedModel):
         else:
             return logits
 
+class SelfAttentionLayer(nn.Module):
+    def __init__(self, nhid, nins):
+        super(SelfAttentionLayer, self).__init__()
+        self.nhid = nhid
+        self.nins = nins
+        #self.project = nn.Sequential(
+        #    nn.Linear(nhid, 64),
+        #    nn.ReLU(True),
+        #    nn.Linear(64, 1)
+        #)
+        self.linear1 = nn.Linear(nhid, 64)
+        self.relu = nn.ReLU(True)
+        self.linear2 = nn.Linear(64, 1)
+
+    def forward(self, inputs, index, claims):
+        tmp = None
+        #print(index)
+        #print(inputs.shape) # [4, 8, 94, 10]
+        if index > -1:
+            idx = torch.LongTensor([index]).cuda()
+            own = torch.index_select(inputs, 1, idx)
+            #print('Select just the first proposition:', own.shape) # [4, 1, 94, 10]
+            own = own.repeat(1, self.nins, 1, 1)
+            #print('Now repeat it for as many propositions as there are:', own.shape) # [4, 8, 94, 10]
+            tmp = torch.cat((own, inputs), 3)
+            #print('Now concat each proposition with this particular one:', tmp.shape) # [4, 8, 94, 20]
+        else:
+            claims = claims.unsqueeze(1)
+            claims = claims.repeat(1, self.nins, 1)
+            tmp = torch.cat((claims, inputs), 2)
+        # before
+        #attention = self.project(tmp) # RuntimeError: Expected tensor for 'out' to have the same device as tensor for argument #3 'mat2'; but device 1 does not equal 0 (while checking arguments for addmm)
+        print(self.linear1)
+        #print(self.linear1.device.index)
+        print(tmp.device.index)
+        out1 = self.linear1(tmp).cuda()
+        #print(out1.shape)
+        print(out1.device.index)
+        out2 = self.relu(out1)
+        #print(out2.shape)
+        print(out2.device.index)
+        attention = self.linear2(out2)
+        print(attention.device.index)
+        weights = F.softmax(attention.squeeze(-1), dim=1)
+        outputs = (inputs * weights.unsqueeze(-1)).sum(dim=1)
+        return outputs
+
+
+class AttentionLayer(nn.Module):
+    def __init__(self, nins, nhid):
+        super(AttentionLayer, self).__init__()
+        self.nins = nins
+        self.attentions = [SelfAttentionLayer(nhid=nhid * 2, nins=nins) for _ in range(nins)]
+
+        for i, attention in enumerate(self.attentions):
+            self.add_module('attention_{}'.format(i), attention)
+
+    def forward(self, inputs):
+        # outputs = torch.cat([att(inputs) for att in self.attentions], dim=1)
+        outputs = torch.cat([self.attentions[i](inputs, i, None) for i in range(self.nins)], dim=1)
+        outputs = outputs.view(inputs.shape)
+        return outputs
+
+
 class BertForSequenceClassificationTagWithAgg(BertPreTrainedModel):
     def __init__(self, config, num_labels=2, tag_config=None):
         super(BertForSequenceClassificationTagWithAgg, self).__init__(config)
@@ -1571,11 +1636,12 @@ class BertForSequenceClassificationTagWithAgg(BertPreTrainedModel):
 
         self.activation = nn.Tanh()
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
-        #self.aggregate = SelfAttentionLayer(nfeat * 2, nins, nclaim)
+
         if tag_config is not None:
             hidden_size = config.hidden_size + tag_config.hidden_size
             self.tag_model = TagEmebedding(tag_config)
-            self.dense = nn.Linear(tag_config.num_aspect * tag_config.hidden_size, tag_config.hidden_size)
+            #self.dense = nn.Linear(tag_config.num_aspect * tag_config.hidden_size, tag_config.hidden_size)
+            self.attentions = AttentionLayer(tag_config.num_aspect, tag_config.hidden_size)  # tag_config.num_aspect, tag_config.hidden_size
         else:
             hidden_size = config.hidden_size
         use_tag = True
@@ -1638,7 +1704,7 @@ class BertForSequenceClassificationTagWithAgg(BertPreTrainedModel):
             cnn_bert = cnn_bert.cuda()
 
         bert_output = self.cnn(cnn_bert, max_word_len)
-        print(bert_output.shape) # [batch_size, max_word_len, bert_vector_size]
+        #print(bert_output.shape) # [batch_size, max_word_len, bert_vector_size]
 
         # THIS IS THE RIGHT SIDE OF THE SCHEMA: TAGGED SENTENCES GET EMBEDDINGS
         use_tag = True
@@ -1649,14 +1715,27 @@ class BertForSequenceClassificationTagWithAgg(BertPreTrainedModel):
             flat_input_tag_ids = input_tag_ids.view(-1, input_tag_ids.size(-1))
             # print("flat_que_tag", flat_input_que_tag_ids.size())
             tag_output = self.tag_model(flat_input_tag_ids, num_aspect)
-            #print(tag_output.shape) # [batch_size, num_aspect, max_seq_len, tag_vocabulary_size] tag_vocabulary_size==10
-            # batch_size, que_len, num_aspect*tag_hidden_size
-            tag_output = tag_output.transpose(1, 2).contiguous().view(batch_size,
-                                                                      max_seq_len, -1)
-            tag_output = self.dense(tag_output)
-            print(tag_output.shape) # [batch_size, max_seq_len, densified_tag_vocab_size]
-            sequence_output = torch.cat((bert_output, tag_output), 2) # concat [batch_size, max_word_len, vector_size] and [batch_size, max_seq_len, densified_tag_vocab_size]
-            print(sequence_output.shape) # [batch_size, max_word_len, bert_vector_size+densified_tag_vocab_size]
+            #print('Tag embedding:', tag_output.shape) # [batch_size, num_aspect, max_seq_len, tag_embedding_size] tag_embedding_size comes from tag_config.hidden_size == 10
+
+
+            #for i in range(self.nlayer): # default nlayer in GEAR is 1
+            tag_output = self.attentions(tag_output) # make each proposition attend the others, RIGHT NOW ISSUES WITH SHAPES
+            #print('After attention layer:',tag_output.shape)
+
+            #if self.pool == 'att': # aggregate them using attention with respect to the claim
+            #    inputs = self.aggregate(inputs, -1, claims)
+            tag_output = torch.max(tag_output, dim=1)[0] # use the max option instead, because it does not need the claims, and I don't have them right now
+            #print('Aggregated: ', tag_output.shape)
+
+            #tag_output = tag_output.transpose(1, 2).contiguous().view(batch_size,
+            #                                                          max_seq_len, -1) # [batch_size, max_seq_len, tag_embedding_size*num_aspect]
+            #tag_output = self.dense(tag_output)
+
+
+
+            #print(tag_output.shape) # [batch_size, max_seq_len, densified_tag_embedding_size]
+            sequence_output = torch.cat((bert_output, tag_output), 2) # concat [batch_size, max_word_len, vector_size] and [batch_size, max_seq_len, densified_tag_embedding_size]
+            #print(sequence_output.shape) # [batch_size, max_word_len, bert_vector_size+densified_tag_embedding_size]
             # print("tag", tag_output.size())
             # print("bert", bert_output.size())
 
@@ -1664,13 +1743,13 @@ class BertForSequenceClassificationTagWithAgg(BertPreTrainedModel):
             sequence_output = bert_output
 
         first_token_tensor = sequence_output[:, 0] # Take the [CLS] token, so the first of the seq_len
-        print(first_token_tensor.shape) # [batch_size, bert_vector_size+densified_tag_vocab_size]
+        #print(first_token_tensor.shape) # [batch_size, bert_vector_size+densified_tag_vocab_size]
         pooled_output = self.pool(first_token_tensor) # a linear layer
         pooled_output = self.activation(pooled_output) # a tanh layer
         pooled_output = self.dropout(pooled_output) # a dropout layer
         # pooled_output = self.aggregate(pooled_output)
         logits = self.classifier(pooled_output) # a linear layer to get logits of the size of the labels
-        print(logits.shape) # [batch_size, n_labels]
+        #print(logits.shape) # [batch_size, n_labels]
 
         if labels is not None:
             loss_fct = CrossEntropyLoss()

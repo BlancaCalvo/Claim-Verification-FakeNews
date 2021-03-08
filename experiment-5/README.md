@@ -17,6 +17,8 @@ fever_bert_srl
 CUDA_VISIBLE_DEVICES=0,1,2 python experiment-5/fever_bert_srl.py --train_srl_file data/srl_features/train_srl_all.json --dev_srl_file data/srl_features/dev_srl_all.json --concat --cuda_devi
 ces 0,1,2 --batch_size 16 --seq_length 250 &> sembert_concat_train.log &
 
+CUDA_VISIBLE_DEVICES=0,1,2 python experiment-5/fever_bert_srl.py --train_srl_file data/srl_features/train_trial.json --dev_srl_file data/srl_features/trial.json --concat --cuda_devices 0,1,2 --batch_size 16 --seq_length 100 --max_num_aspect 10
+
 test
 
 PYTHONPATH=experiment-5 python experiment-5/evaluation/test.py --vote &> sembert_vote_test.log &

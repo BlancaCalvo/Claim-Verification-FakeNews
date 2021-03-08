@@ -124,6 +124,10 @@ class SenTagSequence(object):
 class QueryTagSequence(SenTagSequence):
     def __init__(self, query_words, query_tags_list: List[List[str]]):
         super().__init__(query_words, query_tags_list)
+        self.query_words = query_words
+        self.query_tags_list = query_tags_list
+    def length(self):
+        return len(self.query_tags_list)
 
 
 class DocTagSequence(object):

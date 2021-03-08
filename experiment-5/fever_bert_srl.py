@@ -39,7 +39,7 @@ def read_srl_examples(input):
         data = json.load(read_file)
     examples = []
     for element in data:
-        examples.append(InputExample(guid=element['unique_id'], text_a=element['claim_srl'], text_b=element['evidence_srl'],label=element['label'], index=element['index'], is_claim=element['is_claim']))
+        examples.append(InputExample(guid=element['unique_id'], text_a=element['claim_srl'], text_b=element['evidence_srl'],label=element['label'], index=element['index']))
     return examples
 
 def read_srl_examples_concat(input):
@@ -85,6 +85,7 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", default=16, type=int, required=False)
     parser.add_argument("--seq_length", default=300, type=int, required=False)
     parser.add_argument("--cuda_devices", default='0', type=str, required=False)
+    parser.add_argument("--max_num_aspect", default=3, type=int, required=False)
     #parser.add_argument("--local_rank", type=int, default=-1, help="local_rank for distributed training on gpus")
     #parser.add_argument("--no_cuda", action='store_true', help="Whether not to use CUDA when available")
     parser.add_argument("--concat", action='store_true', help="Set this flag if you want to concat evidences.")
@@ -92,7 +93,7 @@ if __name__ == "__main__":
     parser.add_argument("--vote", action='store_true', help="Set this flag if you want to make voting system with evidences.")
     args = parser.parse_args()
 
-    dir_path = 'experiment-5/outputs/sembert-vote_%s-concat_%s-agg_%s-%dbatch_size-%dseq_length/' % (str(args.vote), str(args.concat), str(args.aggregate), args.batch_size, args.seq_length)
+    dir_path = 'experiment-5/outputs/sembert-vote_%s-concat_%s-agg_%s-%dbatch_size-%dseq_length-%dn_aspect/' % (str(args.vote), str(args.concat), str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect)
     logger.info(dir_path)
     if not os.path.exists(dir_path):
         os.mkdir(dir_path)
@@ -116,14 +117,16 @@ if __name__ == "__main__":
     train_encoded_dataset = convert_examples_to_features(train_dataset, max_seq_length=args.seq_length, tokenizer=tokenizer, srl_predictor=None)
     logger.info('Convert examples to features (VALIDATION).')
     dev_encoded_dataset = convert_examples_to_features(dev_dataset, max_seq_length=args.seq_length, tokenizer=tokenizer, srl_predictor=None)
-    tag_tokenizer = TagTokenizer()
-
-    num_labels = 3
-    max_num_aspect = 3
-    vocab_size = len(tag_tokenizer.ids_to_tags)
-    tag_config = TagConfig(tag_vocab_size=vocab_size, hidden_size=10, layer_num=1, output_dim=10, dropout_prob=0.1, num_aspect=max_num_aspect)
 
     logger.info('Loading the model.')
+    tag_tokenizer = TagTokenizer()
+    num_labels = 3
+    vocab_size = len(tag_tokenizer.ids_to_tags) # currently 22
+    #print(tag_tokenizer.ids_to_tags)
+    logger.info('Tag vocabulary size: %d' % (vocab_size))
+    tag_config = TagConfig(tag_vocab_size=vocab_size, hidden_size=10, layer_num=1, output_dim=10, dropout_prob=0.1, num_aspect=args.max_num_aspect)
+    #logger.info("Model config {}".format(tag_config)) #does not print
+
     if args.aggregate:
         model = BertForSequenceClassificationTagWithAgg.from_pretrained(model_checkpoint, num_labels=num_labels, tag_config=tag_config)
     else:
@@ -131,7 +134,7 @@ if __name__ == "__main__":
 
     logger.info('Create tensors.')
     # CREATE TENSOR DATASETS
-    train_features = transform_tag_features(3, train_encoded_dataset, tag_tokenizer, max_seq_length=args.seq_length) #max_num_aspect=3, check this
+    train_features = transform_tag_features(args.max_num_aspect, train_encoded_dataset, tag_tokenizer, max_seq_length=args.seq_length) #max_num_aspect=3, number of propositions, what if they were from all the evidences
     all_input_ids = torch.tensor([f.input_ids for f in train_features], dtype=torch.long)
     all_input_mask = torch.tensor([f.input_mask for f in train_features], dtype=torch.long)
     all_segment_ids = torch.tensor([f.segment_ids for f in train_features], dtype=torch.long)
@@ -141,7 +144,7 @@ if __name__ == "__main__":
     all_train_indexes = torch.tensor([f.index_id for f in train_features], dtype=torch.long)
     train_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_start_end_idx, all_input_tag_ids, all_label_ids, all_train_indexes)
 
-    eval_features = transform_tag_features(3, dev_encoded_dataset, tag_tokenizer, max_seq_length=args.seq_length)
+    eval_features = transform_tag_features(args.max_num_aspect, dev_encoded_dataset, tag_tokenizer, max_seq_length=args.seq_length)
     all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
     all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
     all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
