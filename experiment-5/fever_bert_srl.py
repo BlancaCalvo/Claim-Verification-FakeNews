@@ -34,6 +34,25 @@ def format_time(elapsed):
     elapsed_rounded = int(round((elapsed)))
     return str(datetime.timedelta(seconds=elapsed_rounded))
 
+def map_srl(srl, type=None):
+    if type == None:
+        return srl
+    else:
+        tags1 = {'[PAD]':'PAD', '[CLS]':'[CLS]', '[SEP]':'[SEP]', 'B-V':'V', 'I-V':'V', 'B-ARG0':'ARG0', 'I-ARG0':'ARG0', 'B-ARG1':'ARG1', 'I-ARG1':'ARG1', 'B-ARG2':'ARG2', 'I-ARG2':'ARG2', 'B-ARG4':'ARG4',
+                 'I-ARG4':'ARG4', 'B-ARGM-TMP':'ARGM', 'I-ARGM-TMP':'ARGM', 'B-ARGM-LOC':'ARGM', 'I-ARGM-LOC':'ARGM', 'B-ARGM-CAU':'ARGM', 'I-ARGM-CAU':'ARGM', 'B-ARGM-PRP':'ARGM',
+                 'I-ARGM-PRP':'ARGM', 'O':'O'}
+        tags_dream = {'[PAD]': 'PAD', '[CLS]': '[CLS]', '[SEP]': '[SEP]', 'B-V': 'verb', 'I-V': 'verb', 'B-ARG0': 'argument',
+                  'I-ARG0': 'argument', 'B-ARG1': 'argument', 'I-ARG1': 'argument', 'B-ARG2': 'argument', 'I-ARG2': 'argument', 'B-ARG4': 'argument',
+                  'I-ARG4': 'argument', 'B-ARGM-TMP': 'temporal', 'I-ARGM-TMP': 'temporal', 'B-ARGM-LOC': 'location', 'I-ARGM-LOC': 'location',
+                  'B-ARGM-CAU': 'argument', 'I-ARGM-CAU': 'argument', 'B-ARGM-PRP': 'argument',
+                  'I-ARGM-PRP': 'argument', 'O': 'O'}
+        for i,dic in enumerate(srl['verbs']):
+            if type=='tags1':
+                srl['verbs'][i]['tags'] = list(map(tags1.get, srl['verbs'][i]['tags']))
+            elif type == 'dream':
+                srl['verbs'][i]['tags'] = list(map(tags_dream.get, srl['verbs'][i]['tags']))
+        return srl
+
 def read_srl_examples(input):
     with open(input, "r") as read_file:
         data = json.load(read_file)
@@ -42,7 +61,7 @@ def read_srl_examples(input):
         examples.append(InputExample(guid=element['unique_id'], text_a=element['claim_srl'], text_b=element['evidence_srl'],label=element['label'], index=element['index']))
     return examples
 
-def read_srl_examples_concat(input):
+def read_srl_examples_concat(input, mapping=None):
     with open(input, "r") as read_file:
         data = json.load(read_file)
     examples = []
@@ -58,8 +77,10 @@ def read_srl_examples_concat(input):
                 res = dic
                 first=0
                 continue
-            examples.append(InputExample(guid=res['index'], text_a=res['claim_srl'], text_b=res['evidence_srl'],label=res['label'], index=res['index']))
+            examples.append(InputExample(guid=res['index'], text_a=map_srl(res['claim_srl'],mapping), text_b=map_srl(res['evidence_srl'],mapping),label=res['label'], index=res['index']))
             res = dic
+            #logger.info(map_srl(res['evidence_srl'],mapping))
+            #exit()
     return examples
 
 def flat_accuracy(preds, labels): # from https://medium.com/@aniruddha.choudhury94/part-2-bert-fine-tuning-tutorial-with-pytorch-for-text-classification-on-the-corpus-of-linguistic-18057ce330e1
@@ -86,14 +107,13 @@ if __name__ == "__main__":
     parser.add_argument("--seq_length", default=300, type=int, required=False)
     parser.add_argument("--cuda_devices", default='0', type=str, required=False)
     parser.add_argument("--max_num_aspect", default=3, type=int, required=False)
-    #parser.add_argument("--local_rank", type=int, default=-1, help="local_rank for distributed training on gpus")
-    #parser.add_argument("--no_cuda", action='store_true', help="Whether not to use CUDA when available")
+    parser.add_argument("--mapping", default=None, type=str, required=False)
     parser.add_argument("--concat", action='store_true', help="Set this flag if you want to concat evidences.")
     parser.add_argument("--aggregate", action='store_true', help="Set this flag if you want to aggregate the evidences.") #does not work yet
     parser.add_argument("--vote", action='store_true', help="Set this flag if you want to make voting system with evidences.")
     args = parser.parse_args()
 
-    dir_path = 'experiment-5/outputs/sembert-vote_%s-concat_%s-agg_%s-%dbatch_size-%dseq_length-%dn_aspect/' % (str(args.vote), str(args.concat), str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect)
+    dir_path = 'experiment-5/outputs/sembert-concat_%s-agg_%s-%dbatch_size-%dseq_length-%dn_aspect-%s/' % (str(args.concat), str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect, str(args.mapping))
     logger.info(dir_path)
     if not os.path.exists(dir_path):
         os.mkdir(dir_path)
@@ -103,8 +123,8 @@ if __name__ == "__main__":
     logger.info('Loading srl.')
 
     if args.concat:
-        train_dataset = read_srl_examples_concat(args.train_srl_file)
-        dev_dataset = read_srl_examples_concat(args.dev_srl_file)
+        train_dataset = read_srl_examples_concat(args.train_srl_file, args.mapping)
+        dev_dataset = read_srl_examples_concat(args.dev_srl_file, args.mapping)
     else:
         train_dataset = read_srl_examples(args.train_srl_file)
         dev_dataset = read_srl_examples(args.dev_srl_file)
@@ -119,7 +139,14 @@ if __name__ == "__main__":
     dev_encoded_dataset = convert_examples_to_features(dev_dataset, max_seq_length=args.seq_length, tokenizer=tokenizer, srl_predictor=None)
 
     logger.info('Loading the model.')
-    tag_tokenizer = TagTokenizer()
+
+    if args.mapping == 'dream':
+        tag_tokenizer = TagTokenizer(vocab=['verb', 'argument', '[CLS]', '[SEP]', '[PAD]', 'location', 'temporal', 'O'])
+    elif args.mapping == 'tags1':
+        tag_tokenizer = TagTokenizer(vocab=['V', 'ARG1','ARG0','ARG2','ARG4', '[CLS]', '[SEP]', '[PAD]', 'ARGM', 'O'])
+    else:
+        tag_tokenizer = TagTokenizer()
+
     num_labels = 3
     vocab_size = len(tag_tokenizer.ids_to_tags) # currently 22
     #print(tag_tokenizer.ids_to_tags)

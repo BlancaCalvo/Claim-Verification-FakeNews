@@ -24,18 +24,20 @@ def load_tag_vocab(tag_vocab_file):
 
 
 class TagTokenizer(object):
-    def __init__(self):
-        self.tag_vocab = TAG_VOCAB
-        self.ids_to_tags = collections.OrderedDict(
-            [(ids, tag) for ids, tag in enumerate(TAG_VOCAB)])
+    def __init__(self, vocab=None):
+        if vocab != None:
+            self.tag_vocab = vocab
+        else:
+            self.tag_vocab = TAG_VOCAB
+        self.ids_to_tags = collections.OrderedDict([(ids, tag) for ids, tag in enumerate(self.tag_vocab)])
 
     def convert_tags_to_ids(self, tags):
         """Converts a sequence of tags into ids using the vocab."""
         ids = []
         for tag in tags:
-            if tag not in TAG_VOCAB:
+            if tag not in self.tag_vocab:
                 tag = 'O'
-            ids.append(TAG_VOCAB.index(tag))
+            ids.append(self.tag_vocab.index(tag))
 
         return ids
 

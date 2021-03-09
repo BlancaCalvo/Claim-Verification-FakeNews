@@ -104,26 +104,59 @@ weights_12 <- fromJSON(paste(readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verific
 embeddings <- weights_12$module.tag_model.embed.tag_embeddings.weight
 
 tags <- c('[PAD]','[CLS]','[SEP]','B-V','I-V','B-ARG0','I-ARG0','B-ARG1','I-ARG1','B-ARG2','I-ARG2','B-ARG4','I-ARG4','B-ARGM-TMP','I-ARGM-TMP','B-ARGM-LOC','I-ARGM-LOC','B-ARGM-CAU','I-ARGM-CAU','B-ARGM-PRP','I-ARGM-PRP','O')
-
+filtered_tags = c('B-V','I-V','B-ARG0','I-ARG0','B-ARG1','I-ARG1','B-ARG2','I-ARG2')
 
 df  <-  as.data.frame(matrix(unlist(embeddings), nrow=length(unlist(embeddings[1]))), col.names=tags)
 
 colnames(df) <- tags
 
+selection <- df%>%
+  select(filtered_tags)
 # [(0, '[PAD]'), (1, '[CLS]'), (2, '[SEP]'), (3, 'B-V'), (4, 'I-V'), (5, 'B-ARG0'), (6, 'I-ARG0'), (7, 'B-ARG1'), (8, 'I-ARG1'), (9, 'B-ARG2'), (10, 'I-ARG2'), (11, 'B-ARG4'), (12, 'I-ARG4'), (13, 'B-ARGM-TMP'), (14, 'I-ARGM-TMP'), (15, 'B-ARGM-LOC'), (16, 'I-ARGM-LOC'), (17, 'B-ARGM-CAU'), (18, 'I-ARGM-CAU'), (19, 'B-ARGM-PRP'), (20, 'I-ARGM-PRP'), (21, 'O')]
 
 ```
+```{r plot_embeddings}
+
+transposed <-selection %>%
+  t()%>%
+  data.frame()
+transposed <- setDT(transposed, keep.rownames = TRUE)[]
+
+for (i in colnames(transposed)){
+  transposed%>%
+    ggplot(aes(X1, i, label = rn)) + 
+    geom_point() +
+    geom_text()
+}
+
+transposed%>%
+    ggplot(aes(X1, X2, label = rn)) + 
+    geom_point() +
+    geom_text()
+
+
+transposed%>%
+    ggplot(aes(X1, X3, label = rn)) + 
+    geom_point() +
+    geom_text()
+
+transposed%>%
+    ggplot(aes(X1, X3, label = rn)) + 
+    geom_point() +
+    geom_text()
+```
+
 
 ```{r plot_embeddings}
 library(tidyr)
 library(dplyr)
 library(ggplot2)
 
-df %>%
+selection %>%
   t()%>%
-  pair
+  pairs()
 
-transposed <-df %>%
+transposed <-selection %>%
   t()%>%
   data.frame()
 
@@ -137,9 +170,14 @@ transposed%>%
 
 transposed.m <- melt(transposed, "rn")
 
-ggplot(transposed.m, aes(value, value)) + 
+transposed.m%>%
+  group_by(variable)%>%
+  ggplot(aes(value, rn)) + 
   geom_point() + 
   facet_wrap(~variable, scales = "free")
+
+library(GGally)
+ggpairs(transposed, aes( alpha = 0.4), cardinality_threshold = 23)
 
 ```
 
@@ -158,5 +196,27 @@ sembert_12_results <- sembert_12_output %>%
   mutate(right = sum(V4==output, na.rm=T))
 
 print(sum(sembert_12_results$right)/nrow(sembert_12_results))
+
+```
+
+```{r add_indx}
+bert_comparison <- cbind(head(bert_results, -1), V5 = sembert_12_results$V5) # I delete one row to match
+
+bert_right = bert_comparison$right
+sembert_12_right = sembert_12_results$right
+
+differing_rows = which(bert_right != sembert_12_right, arr.ind = FALSE)
+
+differing_rows_improve = which(bert_comparison$right==0 & sembert_12_results$right==1, arr.ind = FALSE)
+
+all = merge(bert_comparison, sembert_12_results, by="V5")
+
+all$ID <- seq.int(nrow(all))
+
+differing <- all %>%
+  filter(ID %in% differing_rows)
+
+length(which(bert_right==1))
+length(which(sembert_12_right==1))
 
 ```

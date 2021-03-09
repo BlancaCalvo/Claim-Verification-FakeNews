@@ -1012,7 +1012,7 @@ class BertForSequenceClassificationTag(BertPreTrainedModel):
             # batch_size, que_len, num_aspect*tag_hidden_size
             tag_output = tag_output.transpose(1, 2).contiguous().view(batch_size,
                                                                       max_seq_len, -1)
-            print(self.dense)
+            #print(self.dense)
             tag_output = self.dense(tag_output)
             sequence_output = torch.cat((bert_output, tag_output), 2)
             # print("tag", tag_output.size())
@@ -1572,39 +1572,40 @@ class SelfAttentionLayer(nn.Module):
         #    nn.ReLU(True),
         #    nn.Linear(64, 1)
         #)
-        self.linear1 = nn.Linear(nhid, 64)
+        self.linear1 = nn.Linear(self.nhid, 64)
         self.relu = nn.ReLU(True)
         self.linear2 = nn.Linear(64, 1)
+        self.index = torch.LongTensor([0])
+        self.tmp = None
+        self.own = None
 
     def forward(self, inputs, index, claims):
-        tmp = None
+        self.tmp = None
         #print(index)
-        #print(inputs.shape) # [4, 8, 94, 10]
+        print('Batch has shape:', inputs.shape) # [4, 8, 94, 10]
+        print('Batch is in device:', inputs.device.index)  # [4, 8, 94, 10]
         if index > -1:
-            idx = torch.LongTensor([index]).cuda()
-            own = torch.index_select(inputs, 1, idx)
+            print('Index is:', index)
+            self.index = torch.add(self.index, index).to('cuda:0')
+            print(self.index)
+            self.own = torch.index_select(inputs, 1, self.index)
             #print('Select just the first proposition:', own.shape) # [4, 1, 94, 10]
-            own = own.repeat(1, self.nins, 1, 1)
+            self.own = self.own.repeat(1, self.nins, 1, 1)
             #print('Now repeat it for as many propositions as there are:', own.shape) # [4, 8, 94, 10]
-            tmp = torch.cat((own, inputs), 3)
+            self.tmp = torch.cat((self.own, inputs), 3)
             #print('Now concat each proposition with this particular one:', tmp.shape) # [4, 8, 94, 20]
-        else:
-            claims = claims.unsqueeze(1)
-            claims = claims.repeat(1, self.nins, 1)
-            tmp = torch.cat((claims, inputs), 2)
-        # before
-        #attention = self.project(tmp) # RuntimeError: Expected tensor for 'out' to have the same device as tensor for argument #3 'mat2'; but device 1 does not equal 0 (while checking arguments for addmm)
+        #attention = self.project(tmp)
         print(self.linear1)
         #print(self.linear1.device.index)
-        print(tmp.device.index)
-        out1 = self.linear1(tmp).cuda()
+        print('Input is in device:',self.tmp.device.index)
+        out1 = self.linear1(self.tmp).to('cuda:0')
         #print(out1.shape)
-        print(out1.device.index)
+        print('Output is in device:',out1.device.index)
         out2 = self.relu(out1)
         #print(out2.shape)
-        print(out2.device.index)
+        #print(out2.device.index)
         attention = self.linear2(out2)
-        print(attention.device.index)
+        #print(attention.device.index)
         weights = F.softmax(attention.squeeze(-1), dim=1)
         outputs = (inputs * weights.unsqueeze(-1)).sum(dim=1)
         return outputs
@@ -1614,16 +1615,19 @@ class AttentionLayer(nn.Module):
     def __init__(self, nins, nhid):
         super(AttentionLayer, self).__init__()
         self.nins = nins
-        self.attentions = [SelfAttentionLayer(nhid=nhid * 2, nins=nins) for _ in range(nins)]
+        self.nhid = nhid
+        self.attentions = [SelfAttentionLayer(nhid=self.nhid * 2, nins=self.nins) for _ in range(11)]
+
+        self.outputs = None
 
         for i, attention in enumerate(self.attentions):
             self.add_module('attention_{}'.format(i), attention)
 
     def forward(self, inputs):
         # outputs = torch.cat([att(inputs) for att in self.attentions], dim=1)
-        outputs = torch.cat([self.attentions[i](inputs, i, None) for i in range(self.nins)], dim=1)
-        outputs = outputs.view(inputs.shape)
-        return outputs
+        self.outputs = torch.cat([self.attentions[i](inputs, i, None) for i in range(11)], dim=1).to('cuda:0')
+        self.outputs = self.outputs.view(inputs.shape)
+        return self.outputs
 
 
 class BertForSequenceClassificationTagWithAgg(BertPreTrainedModel):
@@ -1715,29 +1719,19 @@ class BertForSequenceClassificationTagWithAgg(BertPreTrainedModel):
             flat_input_tag_ids = input_tag_ids.view(-1, input_tag_ids.size(-1))
             # print("flat_que_tag", flat_input_que_tag_ids.size())
             tag_output = self.tag_model(flat_input_tag_ids, num_aspect)
+            #print('Batch input is in device:', tag_output.device.index)
+            tag_output = tag_output.to('cuda:0')
+            print('Batch input is in device:', tag_output.device.index)
             #print('Tag embedding:', tag_output.shape) # [batch_size, num_aspect, max_seq_len, tag_embedding_size] tag_embedding_size comes from tag_config.hidden_size == 10
-
-
-            #for i in range(self.nlayer): # default nlayer in GEAR is 1
-            tag_output = self.attentions(tag_output) # make each proposition attend the others, RIGHT NOW ISSUES WITH SHAPES
-            #print('After attention layer:',tag_output.shape)
-
-            #if self.pool == 'att': # aggregate them using attention with respect to the claim
-            #    inputs = self.aggregate(inputs, -1, claims)
-            tag_output = torch.max(tag_output, dim=1)[0] # use the max option instead, because it does not need the claims, and I don't have them right now
-            #print('Aggregated: ', tag_output.shape)
+            tag_output = self.attentions(tag_output) # make each proposition attend the others, ISSUES WITH DEVICES
+            tag_output = torch.max(tag_output, dim=1)[0]
 
             #tag_output = tag_output.transpose(1, 2).contiguous().view(batch_size,
             #                                                          max_seq_len, -1) # [batch_size, max_seq_len, tag_embedding_size*num_aspect]
             #tag_output = self.dense(tag_output)
-
-
-
             #print(tag_output.shape) # [batch_size, max_seq_len, densified_tag_embedding_size]
             sequence_output = torch.cat((bert_output, tag_output), 2) # concat [batch_size, max_word_len, vector_size] and [batch_size, max_seq_len, densified_tag_embedding_size]
             #print(sequence_output.shape) # [batch_size, max_word_len, bert_vector_size+densified_tag_embedding_size]
-            # print("tag", tag_output.size())
-            # print("bert", bert_output.size())
 
         else:
             sequence_output = bert_output
