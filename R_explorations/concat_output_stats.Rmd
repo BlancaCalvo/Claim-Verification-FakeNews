@@ -216,7 +216,25 @@ all$ID <- seq.int(nrow(all))
 differing <- all %>%
   filter(ID %in% differing_rows)
 
+differing_improve <- all %>%
+  filter(ID %in% differing_rows_improve)
+
 length(which(bert_right==1))
 length(which(sembert_12_right==1))
+
+```
+
+```{r dev}
+dev<- read.table("C:/Users/bcalvo/Box/bcalvo/project/GEAR/data/gear/gear-dev-set-0_001.tsv", sep="\t", header=FALSE, comment.char="#", na.strings=".", stringsAsFactors=FALSE, quote="", fill=TRUE)
+```
+
+```{r dev}
+
+all_dev = merge(head(dev, -1), differing_improve, by.x=("V1"), by.y=("V5"))
+
+inspect <- all_dev%>%
+  select(V1, V2, output.x, output.y, V3, V4, V5)
+
+#SUPPORTS = 0, REFUTES=1, NOTENOUGHINFO=2
 
 ```

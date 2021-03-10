@@ -1112,6 +1112,7 @@ class BertForSequenceScoreTag(BertPreTrainedModel):
             input_tag_ids = input_tag_ids[:,:,:max_seq_len]
             flat_input_tag_ids = input_tag_ids.view(-1, input_tag_ids.size(-1))
             # print("flat_que_tag", flat_input_que_tag_ids.size())
+            print(flat_input_tag_ids)
             tag_output = self.tag_model(flat_input_tag_ids, num_aspect)
             # batch_size, que_len, num_aspect*tag_hidden_size
             tag_output = tag_output.transpose(1, 2).contiguous().view(batch_size,

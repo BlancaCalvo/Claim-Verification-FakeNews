@@ -79,8 +79,9 @@ def read_srl_examples_concat(input, mapping=None):
                 continue
             examples.append(InputExample(guid=res['index'], text_a=map_srl(res['claim_srl'],mapping), text_b=map_srl(res['evidence_srl'],mapping),label=res['label'], index=res['index']))
             res = dic
-            #logger.info(map_srl(res['evidence_srl'],mapping))
-            #exit()
+    examples.append(InputExample(guid=res['index'], text_a=map_srl(res['claim_srl'], mapping), text_b=map_srl(res['evidence_srl'], mapping), label=res['label'], index=res['index']))
+    #logger.info(map_srl(res['claim_srl'], mapping))
+    #logger.info(map_srl(res['evidence_srl'], mapping))
     return examples
 
 def flat_accuracy(preds, labels): # from https://medium.com/@aniruddha.choudhury94/part-2-bert-fine-tuning-tutorial-with-pytorch-for-text-classification-on-the-corpus-of-linguistic-18057ce330e1
@@ -149,8 +150,8 @@ if __name__ == "__main__":
 
     num_labels = 3
     vocab_size = len(tag_tokenizer.ids_to_tags) # currently 22
-    #print(tag_tokenizer.ids_to_tags)
     logger.info('Tag vocabulary size: %d' % (vocab_size))
+    logger.info(tag_tokenizer.ids_to_tags)
     tag_config = TagConfig(tag_vocab_size=vocab_size, hidden_size=10, layer_num=1, output_dim=10, dropout_prob=0.1, num_aspect=args.max_num_aspect)
     #logger.info("Model config {}".format(tag_config)) #does not print
 
