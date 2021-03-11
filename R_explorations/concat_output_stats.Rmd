@@ -33,20 +33,7 @@ print(sum(sembert_results$right)/nrow(sembert_results))
 
 ```
 
-```{r import_results}
-bert_output<- read.csv("experiment-5/outputs/bert_base/dev-results.tsv", header = FALSE, sep='\t')
 
-```
-
-```{r check_acc}
-
-bert_results <- bert_output %>%
-  rowwise() %>%
-  mutate(output= which.max(list(V1,V2,V3))-1)%>%
-  mutate(right = sum(V4==output, na.rm=T))
-
-print(sum(bert_results$right)/nrow(bert_results))
-```
 ```{r add_indx}
 bert_results <- cbind(head(bert_results, -1), V5 = sembert_results$V5) # I delete one row to match
 
@@ -77,11 +64,12 @@ dev <- read.table("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/g
                   na.strings=".", stringsAsFactors=FALSE,
                   quote="", fill=TRUE)
 
-all_dev = merge(differing, head(dev, -1), by.x = "V5", by.y = "V1")
 
 ```
 
 ```{r import_results}
+
+
 all_dev %>%
   group_by(right.y)%>%
   summarise(len_claim=mean(length(V3)), len_evidences = mean(length(V4)+length(V5)+length(V6)+length(V7)+length(V8)))
@@ -181,14 +169,20 @@ ggpairs(transposed, aes( alpha = 0.4), cardinality_threshold = 23)
 
 ```
 
-
-
 ```{r import_results}
-sembert_12_output<- read.csv("experiment-5/outputs/sembert_12/dev-results.tsv", header = FALSE, sep='\t')
+bert_output<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/bert_base/dev-results.tsv", header = FALSE, sep='\t')
 
+
+bert_results <- bert_output %>%
+  rowwise() %>%
+  mutate(output= which.max(list(V1,V2,V3))-1)%>%
+  mutate(right = sum(V4==output, na.rm=T))
+
+print(sum(bert_results$right)/nrow(bert_results))
 ```
 
-```{r check_acc}
+```{r import_results}
+sembert_12_output<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_12/dev-results.tsv", header = FALSE, sep='\t')
 
 sembert_12_results <- sembert_12_output %>%
   rowwise() %>%
@@ -202,6 +196,22 @@ print(sum(sembert_12_results$right)/nrow(sembert_12_results))
 ```{r add_indx}
 bert_comparison <- cbind(head(bert_results, -1), V5 = sembert_12_results$V5) # I delete one row to match
 
+all = merge(bert_comparison, sembert_12_results, by="V5", suffixes = c(".bert",".sembert"))
+
+
+```
+
+```{r dev}
+dev<- read.table("C:/Users/bcalvo/Box/bcalvo/project/GEAR/data/gear/gear-dev-set-0_001.tsv", sep="\t", header=FALSE, comment.char="#", na.strings=".", stringsAsFactors=FALSE, quote="", fill=TRUE)
+
+
+
+all_dev = merge(head(dev, -1), all, by.x=("V1"), by.y=("V5"))
+
+```
+
+```{r dev}
+
 bert_right = bert_comparison$right
 sembert_12_right = sembert_12_results$right
 
@@ -209,32 +219,44 @@ differing_rows = which(bert_right != sembert_12_right, arr.ind = FALSE)
 
 differing_rows_improve = which(bert_comparison$right==0 & sembert_12_results$right==1, arr.ind = FALSE)
 
-all = merge(bert_comparison, sembert_12_results, by="V5")
+all_dev$ID <- seq.int(nrow(all_dev))
 
-all$ID <- seq.int(nrow(all))
-
-differing <- all %>%
+differing <- all_dev %>%
   filter(ID %in% differing_rows)
 
-differing_improve <- all %>%
+differing_improve <- all_dev %>%
   filter(ID %in% differing_rows_improve)
+
+inspect <- differing_improve%>%
+  #filter(V2=='SUPPORTS')%>%
+  select(V1, V2, output.bert, output.sembert, V3, V4, V5, V6, V7, V8)#%>%
+  #group_by(V2)%>%
+  #summarise(counts=n())
+
+#SUPPORTS = 0, REFUTES=1, NOTENOUGHINFO=2
+
+all_dev%>%
+  #filter(right.bert==0)%>%
+  group_by(right.bert)%>%
+  summarise(counts=length(V3))
+
+all_dev%>%
+  #filter(right.bert==0)%>%
+  group_by(right.sembert)%>%
+  summarise(counts=mean(length(V3)))
+
 
 length(which(bert_right==1))
 length(which(sembert_12_right==1))
 
-```
 
-```{r dev}
-dev<- read.table("C:/Users/bcalvo/Box/bcalvo/project/GEAR/data/gear/gear-dev-set-0_001.tsv", sep="\t", header=FALSE, comment.char="#", na.strings=".", stringsAsFactors=FALSE, quote="", fill=TRUE)
-```
+differing%>%
+  filter(right.bert==0)%>%
+  group_by(output.bert)%>%
+  summarise(counts=n())
 
-```{r dev}
-
-all_dev = merge(head(dev, -1), differing_improve, by.x=("V1"), by.y=("V5"))
-
-inspect <- all_dev%>%
-  select(V1, V2, output.x, output.y, V3, V4, V5)
-
-#SUPPORTS = 0, REFUTES=1, NOTENOUGHINFO=2
-
+differing%>%
+  filter(right.sembert==0)%>%
+  group_by(output.sembert)%>%
+  summarise(counts=n())
 ```

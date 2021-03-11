@@ -42,15 +42,18 @@ def map_srl(srl, type=None):
                  'I-ARG4':'ARG4', 'B-ARGM-TMP':'ARGM', 'I-ARGM-TMP':'ARGM', 'B-ARGM-LOC':'ARGM', 'I-ARGM-LOC':'ARGM', 'B-ARGM-CAU':'ARGM', 'I-ARGM-CAU':'ARGM', 'B-ARGM-PRP':'ARGM',
                  'I-ARGM-PRP':'ARGM', 'O':'O'}
         tags_dream = {'[PAD]': 'PAD', '[CLS]': '[CLS]', '[SEP]': '[SEP]', 'B-V': 'verb', 'I-V': 'verb', 'B-ARG0': 'argument',
-                  'I-ARG0': 'argument', 'B-ARG1': 'argument', 'I-ARG1': 'argument', 'B-ARG2': 'argument', 'I-ARG2': 'argument', 'B-ARG4': 'argument',
+                  'I-ARG0': 'argument', 'B-ARG1': 'argument', 'I-ARG1': 'argument', 'B-ARG2': 'argument', 'I-ARG2': 'argument', 'B-ARG3':'argument', 'I-ARG3':'argument', 'B-ARG4': 'argument',
                   'I-ARG4': 'argument', 'B-ARGM-TMP': 'temporal', 'I-ARGM-TMP': 'temporal', 'B-ARGM-LOC': 'location', 'I-ARGM-LOC': 'location',
-                  'B-ARGM-CAU': 'argument', 'I-ARGM-CAU': 'argument', 'B-ARGM-PRP': 'argument',
-                  'I-ARGM-PRP': 'argument', 'O': 'O'}
+                  'B-ARGM-CAU': 'argument', 'I-ARGM-CAU': 'argument', 'B-ARGM-PRP': 'argument',  'B-R-ARG0':'argument', 'I-R-ARG0':'argument',
+                  'I-ARGM-PRP': 'argument', 'O': 'O',  'B-ARGM-MNR':'argument', 'I-ARGM-MNR':'argument', 'B-ARGM-ADV':'argument', 'I-ARGM-ADV': 'argument',
+                    'B-ARGM-DIS':'argument', 'I-ARGM-DIS':'argument'}
         for i,dic in enumerate(srl['verbs']):
             if type=='tags1':
                 srl['verbs'][i]['tags'] = list(map(tags1.get, srl['verbs'][i]['tags']))
             elif type == 'dream':
+                #print(srl['verbs'][i]['tags'])
                 srl['verbs'][i]['tags'] = list(map(tags_dream.get, srl['verbs'][i]['tags']))
+                #print(srl['verbs'][i]['tags'])
         return srl
 
 def read_srl_examples(input):
@@ -69,6 +72,10 @@ def read_srl_examples_concat(input, mapping=None):
     res = {'index':''} #'unique_id': None, 'claim_srl':None,'evidence_srl':None,'label':None,
     first = 1
     for dic in data:
+        #print(dic['claim_srl'])
+        dic['claim_srl'] = map_srl(dic['claim_srl'], mapping)
+        dic['evidence_srl'] = map_srl(dic['evidence_srl'], mapping)
+        #print(dic['claim_srl'])
         if dic['index'] == res['index']:
             res['evidence_srl']['verbs'] += (dic['evidence_srl']['verbs'])
             res['evidence_srl']['words'] += (dic['evidence_srl']['words'])
@@ -77,9 +84,9 @@ def read_srl_examples_concat(input, mapping=None):
                 res = dic
                 first=0
                 continue
-            examples.append(InputExample(guid=res['index'], text_a=map_srl(res['claim_srl'],mapping), text_b=map_srl(res['evidence_srl'],mapping),label=res['label'], index=res['index']))
+            examples.append(InputExample(guid=res['index'], text_a=res['claim_srl'], text_b=res['evidence_srl'],label=res['label'], index=res['index']))
             res = dic
-    examples.append(InputExample(guid=res['index'], text_a=map_srl(res['claim_srl'], mapping), text_b=map_srl(res['evidence_srl'], mapping), label=res['label'], index=res['index']))
+    examples.append(InputExample(guid=res['index'], text_a=res['claim_srl'], text_b=res['evidence_srl'], label=res['label'], index=res['index']))
     #logger.info(map_srl(res['claim_srl'], mapping))
     #logger.info(map_srl(res['evidence_srl'], mapping))
     return examples

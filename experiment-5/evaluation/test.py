@@ -26,6 +26,7 @@ parser.add_argument("--concat", action='store_true', help="Set this flag if you 
 parser.add_argument("--aggregate", action='store_true', help="Set this flag if you want to aggregate the evidences.") #does not work yet
 parser.add_argument("--vote", action='store_true', help="Set this flag if you want to make voting system with evidences.")
 parser.add_argument("--max_num_aspect", default=3, type=int, required=False)
+parser.add_argument("--mapping", default=None, type=str, required=False)
 
 parser.add_argument("--seq_length", default=300, type=int, required=False)
 parser.add_argument("--batch_size", default=16, type=int, required=False)
@@ -48,7 +49,13 @@ tokenizer = BertTokenizer.from_pretrained(model_checkpoint, do_lower_case=True)
 
 #logger.info('Convert examples to features (VALIDATION).')
 dev_encoded_dataset = convert_examples_to_features(dev_dataset, max_seq_length=args.seq_length, tokenizer=tokenizer, srl_predictor=None)
-tag_tokenizer = TagTokenizer()
+
+if args.mapping == 'dream':
+    tag_tokenizer = TagTokenizer(vocab=['verb', 'argument', '[CLS]', '[SEP]', '[PAD]', 'location', 'temporal', 'O'])
+elif args.mapping == 'tags1':
+    tag_tokenizer = TagTokenizer(vocab=['V', 'ARG1', 'ARG0', 'ARG2', 'ARG4', '[CLS]', '[SEP]', '[PAD]', 'ARGM', 'O'])
+else:
+    tag_tokenizer = TagTokenizer()
 
 # dataloader
 batch_size = args.batch_size
@@ -80,7 +87,7 @@ device = "cuda:0"
 model.to(device)
 
 for seed in seeds:
-    base_dir = 'experiment-5/outputs/sembert-vote_%s-concat_%s-agg_%s-%dbatch_size-%dseq_length-%dn_aspect//' % (str(args.vote), str(args.concat), str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect)
+    base_dir = 'experiment-5/outputs/sembert-concat_%s-agg_%s-%dbatch_size-%dseq_length-%dn_aspect-%s/' % (str(args.concat), str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect, str(args.mapping))
     #base_dir = 'experiment-5/outputs/bert_base/'
     if not os.path.exists(base_dir):
         print('%s results do not exist!' % base_dir)
