@@ -17,163 +17,32 @@ library(data.table)
 
 ```
 
-```{r import_results}
-sembert_output<- read.csv("experiment-5/outputs/sembert_concat_1/dev-results.tsv", header = FALSE, sep='\t')
 
-```
-
-```{r check_acc}
-
-sembert_results <- sembert_output %>%
-  rowwise() %>%
-  mutate(output= which.max(list(V1,V2,V3))-1)%>%
-  mutate(right = sum(V4==output, na.rm=T))
-
-print(sum(sembert_results$right)/nrow(sembert_results))
-
-```
-
-
-```{r add_indx}
-bert_results <- cbind(head(bert_results, -1), V5 = sembert_results$V5) # I delete one row to match
-
-```
-
-
-```{r add_indx}
-
-bert_right = bert_results$right
-sembert_right = sembert_results$right
-
-differing_rows = which(bert_right != sembert_right, arr.ind = FALSE)
-
-all = merge(bert_results, sembert_results, by="V5")
-
-all$ID <- seq.int(nrow(all))
-
-differing <- all %>%
-  filter(ID %in% differing_rows)
-
-```
 
 
 ```{r import_results}
-#dev<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/gear-dev-data.tsv", header = FALSE, sep='\t')
-
-dev <- read.table("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/gear-dev-data.tsv", sep="\t", header=FALSE, comment.char="#",
-                  na.strings=".", stringsAsFactors=FALSE,
-                  quote="", fill=TRUE)
-
-
-```
-
-```{r import_results}
-
-
-all_dev %>%
-  group_by(right.y)%>%
-  summarise(len_claim=mean(length(V3)), len_evidences = mean(length(V4)+length(V5)+length(V6)+length(V7)+length(V8)))
-
-```
-
-```{r import_results}
-library("rjson")
 json_data <- fromJSON(paste(readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/dev_srl_all.json"), collapse=""))
 
-```
-```{r import_results}
+json_data[[1]]$evidence_srl$verbs[[1]]$tags
 
-weights_12 <- fromJSON(paste(readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_12/weights.json"), collapse=""))
+list_index = list()
+list_i = list()
 
-```
+for (i in 1:length(json_data)){
+  #print(i)
+  list_index = append(list_index,json_data[[i]]$index)
+  list_i = append(list_i, i)
+} 
 
-```{r import_results}
-
-embeddings <- weights_12$module.tag_model.embed.tag_embeddings.weight
-
-tags <- c('[PAD]','[CLS]','[SEP]','B-V','I-V','B-ARG0','I-ARG0','B-ARG1','I-ARG1','B-ARG2','I-ARG2','B-ARG4','I-ARG4','B-ARGM-TMP','I-ARGM-TMP','B-ARGM-LOC','I-ARGM-LOC','B-ARGM-CAU','I-ARGM-CAU','B-ARGM-PRP','I-ARGM-PRP','O')
-filtered_tags = c('B-V','I-V','B-ARG0','I-ARG0','B-ARG1','I-ARG1','B-ARG2','I-ARG2')
-
-df  <-  as.data.frame(matrix(unlist(embeddings), nrow=length(unlist(embeddings[1]))), col.names=tags)
-
-colnames(df) <- tags
-
-selection <- df%>%
-  select(filtered_tags)
-# [(0, '[PAD]'), (1, '[CLS]'), (2, '[SEP]'), (3, 'B-V'), (4, 'I-V'), (5, 'B-ARG0'), (6, 'I-ARG0'), (7, 'B-ARG1'), (8, 'I-ARG1'), (9, 'B-ARG2'), (10, 'I-ARG2'), (11, 'B-ARG4'), (12, 'I-ARG4'), (13, 'B-ARGM-TMP'), (14, 'I-ARGM-TMP'), (15, 'B-ARGM-LOC'), (16, 'I-ARGM-LOC'), (17, 'B-ARGM-CAU'), (18, 'I-ARGM-CAU'), (19, 'B-ARGM-PRP'), (20, 'I-ARGM-PRP'), (21, 'O')]
-
-```
-```{r plot_embeddings}
-
-transposed <-selection %>%
-  t()%>%
-  data.frame()
-transposed <- setDT(transposed, keep.rownames = TRUE)[]
-
-for (i in colnames(transposed)){
-  transposed%>%
-    ggplot(aes(X1, i, label = rn)) + 
-    geom_point() +
-    geom_text()
-}
-
-transposed%>%
-    ggplot(aes(X1, X2, label = rn)) + 
-    geom_point() +
-    geom_text()
-
-
-transposed%>%
-    ggplot(aes(X1, X3, label = rn)) + 
-    geom_point() +
-    geom_text()
-
-transposed%>%
-    ggplot(aes(X1, X3, label = rn)) + 
-    geom_point() +
-    geom_text()
+correspondence <- do.call(rbind.data.frame, Map('c', list_index, list_i))
+colnames(correspondence) <- c("claim_index", "evidence_index")
 ```
 
-
-```{r plot_embeddings}
-library(tidyr)
-library(dplyr)
-library(ggplot2)
-
-selection %>%
-  t()%>%
-  pairs()
-
-transposed <-selection %>%
-  t()%>%
-  data.frame()
-
-transposed <- setDT(transposed, keep.rownames = TRUE)[]
-
-transposed%>%
-  gather(key, value, -rn) %>%
-  ggplot(aes(x = value, y = value)) + 
-  geom_point() +
-  facet_wrap(~key)
-
-transposed.m <- melt(transposed, "rn")
-
-transposed.m%>%
-  group_by(variable)%>%
-  ggplot(aes(value, rn)) + 
-  geom_point() + 
-  facet_wrap(~variable, scales = "free")
-
-library(GGally)
-ggpairs(transposed, aes( alpha = 0.4), cardinality_threshold = 23)
-
-```
 
 ```{r import_results}
-bert_output<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/bert_base/dev-results.tsv", header = FALSE, sep='\t')
+bert_results<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/bert_base/dev-results.tsv", header = FALSE, sep='\t')
 
-
-bert_results <- bert_output %>%
+bert_results <- bert_results %>%
   rowwise() %>%
   mutate(output= which.max(list(V1,V2,V3))-1)%>%
   mutate(right = sum(V4==output, na.rm=T))
@@ -182,9 +51,9 @@ print(sum(bert_results$right)/nrow(bert_results))
 ```
 
 ```{r import_results}
-sembert_12_output<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_12/dev-results.tsv", header = FALSE, sep='\t')
+sembert_12_results<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_12/dev-results.tsv", header = FALSE, sep='\t')
 
-sembert_12_results <- sembert_12_output %>%
+sembert_12_results <- sembert_12_results %>%
   rowwise() %>%
   mutate(output= which.max(list(V1,V2,V3))-1)%>%
   mutate(right = sum(V4==output, na.rm=T))
@@ -194,30 +63,46 @@ print(sum(sembert_12_results$right)/nrow(sembert_12_results))
 ```
 
 ```{r add_indx}
-bert_comparison <- cbind(head(bert_results, -1), V5 = sembert_12_results$V5) # I delete one row to match
+bert_results <- cbind(head(bert_results, -1), V5 = sembert_12_results$V5) # I delete one row to match
 
-all = merge(bert_comparison, sembert_12_results, by="V5", suffixes = c(".bert",".sembert"))
+all = merge(bert_results, sembert_12_results, by="V5", suffixes = c(".bert",".sembert"))
+```
 
+
+```{r import_results}
+#sembert_12_output<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/mapping/dev-results.tsv", header = FALSE, sep='\t')
+
+#sembert_12_results <- sembert_12_output %>%
+#  rowwise() %>%
+#  mutate(output= which.max(list(V1,V2,V3))-1)%>%
+#  mutate(right = sum(V4==output, na.rm=T))
+
+#print(sum(sembert_12_results$right)/nrow(sembert_12_results))
 
 ```
 
-```{r dev}
-dev<- read.table("C:/Users/bcalvo/Box/bcalvo/project/GEAR/data/gear/gear-dev-set-0_001.tsv", sep="\t", header=FALSE, comment.char="#", na.strings=".", stringsAsFactors=FALSE, quote="", fill=TRUE)
 
+```{r dev}
+dev<- read.table("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/dev_data_new.tsv", sep="\t", header=FALSE, comment.char="#", na.strings=".", stringsAsFactors=FALSE, quote="", fill=TRUE)
 
 
 all_dev = merge(head(dev, -1), all, by.x=("V1"), by.y=("V5"))
 
+
+all_dev %>%
+  group_by(right.sembert)%>%
+  summarise(len_claim=mean(nchar(V3)), len_evidences = mean(nchar(V4)+nchar(V5)+nchar(V6)+nchar(V7)+nchar(V8)))
+
 ```
 
 ```{r dev}
 
-bert_right = bert_comparison$right
+bert_right = bert_results$right
 sembert_12_right = sembert_12_results$right
 
 differing_rows = which(bert_right != sembert_12_right, arr.ind = FALSE)
 
-differing_rows_improve = which(bert_comparison$right==0 & sembert_12_results$right==1, arr.ind = FALSE)
+#differing_rows_improve = which(bert_comparison$right==0 & sembert_12_results$right==1, arr.ind = FALSE)
 
 all_dev$ID <- seq.int(nrow(all_dev))
 
@@ -225,38 +110,61 @@ differing <- all_dev %>%
   filter(ID %in% differing_rows)
 
 differing_improve <- all_dev %>%
-  filter(ID %in% differing_rows_improve)
+  filter(ID %in% which(bert_results$right==0 & sembert_12_results$right==1, arr.ind = FALSE))
 
-inspect <- differing_improve%>%
-  #filter(V2=='SUPPORTS')%>%
-  select(V1, V2, output.bert, output.sembert, V3, V4, V5, V6, V7, V8)#%>%
-  #group_by(V2)%>%
-  #summarise(counts=n())
+differing_worse <- all_dev %>%
+  filter(ID %in% which(bert_results$right==1 & sembert_12_results$right==0, arr.ind = FALSE))
 
-#SUPPORTS = 0, REFUTES=1, NOTENOUGHINFO=2
+differing_improve %>%
+  #filter(V1 %in% gold_dev$V4)%>%
+  group_by(V2, output.bert)%>%
+  summarise(counts = n())
+  
+differing_worse %>%
+  #filter(V1 %in% gold_dev$V4)%>%
+  group_by(V2, output.sembert)%>%
+  summarise(counts = n())
 
-all_dev%>%
-  #filter(right.bert==0)%>%
-  group_by(right.bert)%>%
-  summarise(counts=length(V3))
-
-all_dev%>%
-  #filter(right.bert==0)%>%
-  group_by(right.sembert)%>%
-  summarise(counts=mean(length(V3)))
-
-
-length(which(bert_right==1))
-length(which(sembert_12_right==1))
-
-
-differing%>%
-  filter(right.bert==0)%>%
-  group_by(output.bert)%>%
-  summarise(counts=n())
-
-differing%>%
-  filter(right.sembert==0)%>%
-  group_by(output.sembert)%>%
-  summarise(counts=n())
 ```
+
+```{r dev}
+gold_dev<- read.table("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/gold_evidence_dev.tsv", sep="\t", header=FALSE, comment.char="#", na.strings=".", stringsAsFactors=FALSE, quote="", fill=TRUE)
+```
+
+```{r inspection1}
+# inspect claims that just have one evidence in gold_dev, that have label SUPPORT, are labeled wrong in BERT and right in SEMBERT
+ev_1_lb_S <- gold_dev%>%
+  filter(V1=='REFUTES')%>%
+  group_by(V4)%>%
+  distinct(V2,.keep_all= TRUE)%>%
+  mutate(N_evidences = n())%>%
+  filter(N_evidences==1)
+
+```
+
+```{r inspection1}
+inspect1 = merge(ev_1_lb_S, differing_worse, by.x=("V4"), by.y=("V1"), suffixes = c(".gold",".retrieved"))
+
+
+go <- inspect1%>%
+  filter(output.sembert==2)%>%
+  select(ID, output.bert, V3.gold, V5.gold, V2.gold, V4.retrieved, V5.retrieved, V6.retrieved, V7, V8)
+
+```
+
+
+#inspect!!
+instance <- go[2,]
+
+instance
+
+correspondence%>%
+  filter(claim_index == instance$ID-1)
+
+json_data[[1012]]$evidence_srl
+
+
+
+
+
+

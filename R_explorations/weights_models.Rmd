@@ -1,0 +1,96 @@
+---
+title: "Model_weights"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r import_results}
+
+weights_12 <- fromJSON(paste(readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_12/weights.json"), collapse=""))
+
+```
+
+```{r import_results}
+
+embeddings <- weights_12$module.tag_model.embed.tag_embeddings.weight
+
+tags <- c('[PAD]','[CLS]','[SEP]','B-V','I-V','B-ARG0','I-ARG0','B-ARG1','I-ARG1','B-ARG2','I-ARG2','B-ARG4','I-ARG4','B-ARGM-TMP','I-ARGM-TMP','B-ARGM-LOC','I-ARGM-LOC','B-ARGM-CAU','I-ARGM-CAU','B-ARGM-PRP','I-ARGM-PRP','O')
+filtered_tags = c('B-V','I-V','B-ARG0','I-ARG0','B-ARG1','I-ARG1','B-ARG2','I-ARG2')
+
+df  <-  as.data.frame(matrix(unlist(embeddings), nrow=length(unlist(embeddings[1]))), col.names=tags)
+
+colnames(df) <- tags
+
+selection <- df%>%
+  select(filtered_tags)
+# [(0, '[PAD]'), (1, '[CLS]'), (2, '[SEP]'), (3, 'B-V'), (4, 'I-V'), (5, 'B-ARG0'), (6, 'I-ARG0'), (7, 'B-ARG1'), (8, 'I-ARG1'), (9, 'B-ARG2'), (10, 'I-ARG2'), (11, 'B-ARG4'), (12, 'I-ARG4'), (13, 'B-ARGM-TMP'), (14, 'I-ARGM-TMP'), (15, 'B-ARGM-LOC'), (16, 'I-ARGM-LOC'), (17, 'B-ARGM-CAU'), (18, 'I-ARGM-CAU'), (19, 'B-ARGM-PRP'), (20, 'I-ARGM-PRP'), (21, 'O')]
+
+```
+```{r plot_embeddings}
+
+transposed <-selection %>%
+  t()%>%
+  data.frame()
+transposed <- setDT(transposed, keep.rownames = TRUE)[]
+
+for (i in colnames(transposed)){
+  transposed%>%
+    ggplot(aes(X1, i, label = rn)) + 
+    geom_point() +
+    geom_text()
+}
+
+transposed%>%
+    ggplot(aes(X1, X2, label = rn)) + 
+    geom_point() +
+    geom_text()
+
+
+transposed%>%
+    ggplot(aes(X1, X3, label = rn)) + 
+    geom_point() +
+    geom_text()
+
+transposed%>%
+    ggplot(aes(X1, X3, label = rn)) + 
+    geom_point() +
+    geom_text()
+```
+
+
+```{r plot_embeddings}
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+
+selection %>%
+  t()%>%
+  pairs()
+
+transposed <-selection %>%
+  t()%>%
+  data.frame()
+
+transposed <- setDT(transposed, keep.rownames = TRUE)[]
+
+transposed%>%
+  gather(key, value, -rn) %>%
+  ggplot(aes(x = value, y = value)) + 
+  geom_point() +
+  facet_wrap(~key)
+
+transposed.m <- melt(transposed, "rn")
+
+transposed.m%>%
+  group_by(variable)%>%
+  ggplot(aes(value, rn)) + 
+  geom_point() + 
+  facet_wrap(~variable, scales = "free")
+
+library(GGally)
+ggpairs(transposed, aes( alpha = 0.4), cardinality_threshold = 23)
+
+```

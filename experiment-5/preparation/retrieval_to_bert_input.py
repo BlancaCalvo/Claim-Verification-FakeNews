@@ -32,6 +32,7 @@ def process(input, output):
     for instance in tqdm(instances):
         index, label, claim, evidences = instance
         for evidence in evidences:
+            print(evidence)
             article = evidence[0]
             location = evidence[1]
             evidence_str = None
@@ -40,8 +41,10 @@ def process(input, output):
                 (utils.normalize(article),)
             )
             for row in cursor:
+                #print(row)
                 sentences = row[2].split('\n')
                 for sentence in sentences:
+                    #print(sentence)
                     if sentence == '': continue
                     arr = sentence.split('\t')
                     if not arr[0].isdigit():
@@ -49,16 +52,19 @@ def process(input, output):
                         continue
                     line_num = int(arr[0])
                     if len(arr) <= 1: continue
-                    sentence = ' '.join(arr[1:])
+                    #sentence = ' '.join(arr[1:]) # THIS ADDED THE NOUN PHRASES AND I DON'T WANT THEM
+                    sentence = arr[1]
                     if sentence == '':
                         continue
                     if line_num == location:
                         evidence_str = sentence
                         break
             if evidence_str:
+                #print(evidence_str)
                 fout.write(('%s\t%s\t%s\t%s\t%s\t%d\t%s\r\n' % (label, evidence_str, claim, index, evidence[0], evidence[1], evidence[2])).encode(ENCODING))
             else:
                 print('Error: cant find %s %d for %s' % (article, location, index))
+            #exit()
     fout.close()
 
 
@@ -85,6 +91,7 @@ def build_bert_train_sr_set(data_dir, output_dir):
         for evidence_set in evidences:
             # text_set = []
             for evidence in evidence_set:
+                print(evidence)
                 article = evidence[2]
                 article_index = evidence[3]
                 try:
@@ -96,14 +103,16 @@ def build_bert_train_sr_set(data_dir, output_dir):
                     lines = row[2].split('\n')
                     items = lines[article_index].split('\t')
 
+                    print(items)
+
                     sentence = ' '.join(items[1:])
                     # words = sentence.split(' ')
                     # if len(words) > 100:
                     #     sentence = ' '.join(words[:100])
                     # text_set.append(sentence)
 
-                    fout.write(('%s\t%s\t%s\t%d\t%s\t%s\r\n' % (label, sentence, claim, cnt, article, article_index)).encode(
-                            ENCODING))
+                    fout.write(('%s\t%s\t%s\t%d\t%s\t%s\r\n' % (label, sentence, claim, cnt, article, article_index)).encode(ENCODING))
+
 
             # total_evidence = ' '.join(text_set)
             # total_evidence_words = total_evidence.split(' ')
@@ -117,9 +126,75 @@ def build_bert_train_sr_set(data_dir, output_dir):
     fin.close()
     fout.close()
 
+def gold_evidence(input, output):
+    fin = open(input, 'rb')
+    #fout = open(output, 'wb')
+    index = 0
+    instances = []
+    for line in fin:
+        object = json.loads(line.decode(ENCODING).strip('\r\n'))
+        #if 'label' in object:
+        label = ''.join(object['label'].split(' '))
+            #print(label)
+            #if label == "NOTENOUGHINFO":
+                #print('works')
+            #    continue
+        #else:
+        #    label = 'REFUTES'
+        evidences = object['evidence']
+        #print(evidences)
+        claim = object['claim']
+        instances.append([index, label, claim, evidences])
+        index += 1
+    fin.close()
+    print(index)
+
+    fout = open(output, 'wb')
+    for instance in tqdm(instances):
+        index, label, claim, evidences = instance
+        for evidence in evidences:
+            evidence = evidence[0]
+            #print(evidence)
+            article = evidence[2]
+            article_index = evidence[3]
+            try:
+                cursor.execute("select * from documents where id='%s';" % article.replace("'", "''"))
+            except Exception as e:
+                print(e)
+                continue
+            for row in cursor:
+                sentences = row[2].split('\n')
+                for sentence in sentences:
+                    #print(sentence)
+                    if sentence == '': continue
+                    arr = sentence.split('\t')
+                    #print(arr)
+                    if not arr[0].isdigit():
+                        # print(('Warning: this line from article %s for claim %d is not digit %s\r\n' % (article, i, sentence)).encode(ENCODING))
+                        continue
+                    line_num = int(arr[0])
+                    if len(arr) <= 1: continue
+                    # sentence = ' '.join(arr[1:]) # THIS ADDED THE NOUN PHRASES AND I DON'T WANT THEM
+                    sentence = arr[1]
+                    if sentence == '':
+                        continue
+                    if line_num == article_index:
+                        evidence_str = sentence
+                        break
+            if evidence_str:
+                # print(evidence_str)
+                fout.write(('%s\t%s\t%s\t%d\t%s\t%d\r\n' % (label, evidence_str, claim, index, evidence[2], evidence[3])).encode(ENCODING))
+            else:
+                print('Error: cant find %s %d for %s' % (article, article_index, index))
+    fout.close()
+
+
+
 
 if __name__ == '__main__':
-    build_bert_train_sr_set('../data/fever/train.jsonl', '../data/bert/bert-nli-train-sr-set.tsv')
-    process('../data/retrieved/train.ensembles.s10.jsonl', '../data/bert/bert-nli-train-retrieve-set.tsv')
-    process('../data/retrieved/dev.ensembles.s10.jsonl', '../data/bert/bert-nli-dev-retrieve-set.tsv')
-    process('../data/retrieved/test.ensembles.s10.jsonl', '../data/bert/bert-nli-test-retrieve-set.tsv')
+    #build_bert_train_sr_set('data/fever/train.jsonl', 'data/gear/bert-nli-train-sr-set.tsv') # I'm still not sure why this is needed
+    #process('data/retrieved/train.ensembles.s10.jsonl', 'data/gear/bert-nli-train-retrieve-set.tsv')
+    #process('data/retrieved/dev.ensembles.s10.jsonl', 'data/gear/bert-nli-dev-retrieve-set.tsv')
+    gold_evidence('data/retrieved/dev.ensembles.s10.jsonl', 'data/gear/gold_evidence_dev.tsv') # this gives us the annotated evidence!!
+    #process('data/retrieved/test.ensembles.s10.jsonl', 'data/bert/bert-nli-test-retrieve-set.tsv')
+    #retrieve_gold_evidences('data/retrieved/dev.ensembles.s10.jsonl', 'data/bert/bert-nli-dev-retrieve-set.tsv')

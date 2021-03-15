@@ -11,7 +11,7 @@ def is_evidence_exist(evidence_set, evid):
 '''
     Build GEAR train set with truth evidence and retrieval evidence.
 '''
-def build_with_truth_and_threshold(truth_file, athene_file, output_file, label_file, threshold):
+def build_with_truth_and_threshold(truth_file, athene_file, output_file, threshold, label_file=None):
     fin = open(truth_file, 'rb')
     instances = {}
     for line in fin:
@@ -144,21 +144,21 @@ def build_with_threshold(input, output, threshold):
 
 if __name__ == '__main__':
     print('Start building gear train set...')
-    build_with_truth_and_threshold('../data/bert/bert-nli-train-sr-set.tsv',
-                                   '../data/bert/bert-nli-train-retrieve-set.tsv',
-                                   '../data/gear/gear-train-set-0_001.tsv',
-                                   'none.tsv', 0.001)
+    build_with_truth_and_threshold('data/gear/bert-nli-train-sr-set.tsv', # gives as input golden evidences
+                                   'data/gear/bert-nli-train-retrieve-set.tsv', # gives as input athene evidences
+                                   'data/gear/N_gear-train-set-0_001.tsv',
+                                   threshold=0.001)
 
     print('Start building gear dev set...')
-    build_with_threshold('../data/bert/bert-nli-dev-retrieve-set.tsv',
-                         '../data/gear/gear-dev-set-0_001.tsv', 0.001)
+    build_with_threshold('data/gear/bert-nli-dev-retrieve-set.tsv',
+                         'data/gear/N_gear-dev-set-0_001.tsv', 0.001)
     # build_with_threshold('../data/bert/bert-nli-dev-retrieve-set.tsv', '../data/gear/gear-dev-set-0_1.tsv', 0.1)
     # build_with_threshold('../data/bert/bert-nli-dev-retrieve-set.tsv', '../data/gear/gear-dev-set-0_01.tsv', 0.01)
     # build_with_threshold('../data/bert/bert-nli-dev-retrieve-set.tsv', '../data/gear/gear-dev-set-0_0001.tsv', 0.0001)
 
-    print('Start building gear test set...')
-    build_with_threshold('../data/bert/bert-nli-test-retrieve-set.tsv',
-                         '../data/gear/gear-test-set-0_001.tsv', 0.001)
+    #print('Start building gear test set...')
+    #build_with_threshold('data/gear/bert-nli-test-retrieve-set.tsv',
+    #                     'data/gear/gear-test-set-0_001.tsv', 0.001)
     # build_with_threshold('../data/bert/bert-nli-test-retrieve-set.tsv', '../data/gear/gear-test-set-0_1.tsv', 0.1)
     # build_with_threshold('../data/bert/bert-nli-test-retrieve-set.tsv', '../data/gear/gear-test-set-0_01.tsv', 0.01)
     # build_with_threshold('../data/bert/bert-nli-test-retrieve-set.tsv', '../data/gear/gear-test-set-0_0001.tsv', 0.0001)

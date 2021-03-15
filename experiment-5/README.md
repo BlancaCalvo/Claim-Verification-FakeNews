@@ -22,10 +22,10 @@ data/retrieved/
 wget -O data/fever/fever.db https://s3-eu-west-1.amazonaws.com/fever.public/wiki_index/fever.db
 
 # Extract the evidence from database
-python preparation/retrieval_to_bert_input.py
+python experiment-5/preparation/retrieval_to_bert_input.py
 
 # Build the datasets for gear
-python preparation/build_gear_input_set.py
+python experiment-5/preparation/build_gear_input_set.py
 
 ```
 
