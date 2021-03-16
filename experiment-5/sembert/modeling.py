@@ -1437,7 +1437,6 @@ class BertForSequenceClassificationTagExplained(BertPreTrainedModel):
 
         self.activation = nn.Tanh()
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
-        #self.aggregate = SelfAttentionLayer(nfeat * 2, nins, nclaim)
         if tag_config is not None:
             hidden_size = config.hidden_size + tag_config.hidden_size
             self.tag_model = TagEmebedding(tag_config)
@@ -1446,41 +1445,39 @@ class BertForSequenceClassificationTagExplained(BertPreTrainedModel):
             hidden_size = config.hidden_size
         use_tag = True
         if use_tag:
-            self.pool = nn.Linear(config.hidden_size + tag_config.hidden_size, config.hidden_size + tag_config.hidden_size)
+            self.pool = nn.Linear(config.hidden_size + tag_config.hidden_size,
+                                  config.hidden_size + tag_config.hidden_size)
             self.classifier = nn.Linear(config.hidden_size + tag_config.hidden_size, num_labels)
         else:
             self.pool = nn.Linear(config.hidden_size, config.hidden_size)
             self.classifier = nn.Linear(hidden_size, num_labels)
         self.apply(self.init_bert_weights)
 
-    def forward(self, input_ids, index_ids, token_type_ids=None, attention_mask=None, start_end_idx=None, input_tag_ids=None, labels=None):
-        # THIS IS THE LEFT SIDE OF THE SCHEMA: SUBWORDS TO BERT AND THEN CNN TO MAKE THEM BACK TO WORDS
-        print('begin forward')
-        print('create bert input with the text')
+    def forward(self, input_ids, token_type_ids=None, attention_mask=None, start_end_idx=None, input_tag_ids=None,
+                labels=None):
+        print('Start of the forward: ')
         sequence_output, _ = self.bert(input_ids, token_type_ids, attention_mask, output_all_encoded_layers=False)
-        print(sequence_output.shape) # [batch_size, max_seq_len, bert_vector_size]
+        print(sequence_output.shape)
         no_cuda = False
         batch_size, sub_seq_len, dim = sequence_output.size()
         # sequence_output = sequence_output.unsqueeze(1)
         start_end_idx = start_end_idx  # batch * seq_len * (start, end)
         max_seq_len = -1
-        max_word_len = self.filter_size # I think it starts in 3 because that's the special characters
-        print("It's matching the max_seq_len that I gave it (100, which refers to bert subwords) with what should be the max of word length (70, with traditional tokens)")
+        max_word_len = self.filter_size
         for se_idx in start_end_idx:
-            num_words = 0 # counts words in sentence
+            num_words = 0
             for item in se_idx:
-                if item[0] != -1 and item[1] != -1: # checks number of subwords in word
+                if item[0] != -1 and item[1] != -1:
                     num_subs = item[1] - item[0] + 1
-                    if num_subs > max_word_len: # if that's bigger than the max_words length, it make the num of sublength the max
+                    if num_subs > max_word_len:
                         max_word_len = num_subs
                     num_words += 1
             if num_words > max_seq_len:
                 max_seq_len = num_words
         assert max_word_len >= self.filter_size
-        print('And then it uses this to create subword ids that match the subwords to the words, and makes a tensor out of that')
         batch_start_end_ids = []
         batch_id = 0
-        for batch in start_end_idx: # as I see it, batch should be the exact same as se_idx
+        for batch in start_end_idx:
             word_seqs = []
             offset = batch_id * sub_seq_len
             for item in batch:
@@ -1495,66 +1492,53 @@ class BertForSequenceClassificationTagExplained(BertPreTrainedModel):
             batch_id += 1
 
         batch_start_end_ids = torch.tensor(batch_start_end_ids)
-        print(batch_start_end_ids.shape) # [batch_size, max_seq_len, 5] # WHY 5?
         batch_start_end_ids = batch_start_end_ids.view(-1)
         sequence_output = sequence_output.view(-1, dim)
         sequence_output = torch.cat([sequence_output.new_zeros((1, dim)), sequence_output], dim=0)
         if not no_cuda:
             batch_start_end_ids = batch_start_end_ids.cuda()
-
-        print('Here it applies the CNN to make the subwords back to words, with the max_words that it created earlier.')
         cnn_bert = sequence_output.index_select(0, batch_start_end_ids)
         cnn_bert = cnn_bert.view(batch_size, max_seq_len, max_word_len, dim)
         if not no_cuda:
             cnn_bert = cnn_bert.cuda()
-
+        print('Makes the sequence into classic tokens with new max sequence length:')
         bert_output = self.cnn(cnn_bert, max_word_len)
-        print('This is the actual shape of the text part:')
-        print(bert_output.shape) # [batch_size, max_word_len, bert_vector_size]
+        print(bert_output.shape)
+        print(bert_output[0,:,:])
 
-        # THIS IS THE RIGHT SIDE OF THE SCHEMA: TAGGED SENTENCES GET EMBEDDINGS
-        print('Now it starts with the tags part')
         use_tag = True
         if use_tag:
-            num_aspect = input_tag_ids.size(1) # that's the number of propositions == 3
+            print('Start tags part:')
+            num_aspect = input_tag_ids.size(1)
             print(num_aspect)
-            print(input_tag_ids.shape) # [batch_size, num_aspect, max_seq_len]
-            print('It selects the tags of the input, but just up until the new max_sq_len == max_word_len. In other words, it gives a tad id to each word in the input.')
-            input_tag_ids = input_tag_ids[:,:,:max_seq_len]
-            print(input_tag_ids.shape) # [batch_size, num_aspect, max_seq_len==max_word_len]
+            input_tag_ids = input_tag_ids[:, :, :max_seq_len]
             flat_input_tag_ids = input_tag_ids.view(-1, input_tag_ids.size(-1))
-            print(flat_input_tag_ids.shape) # [batch_size x 3, max_seq_len==max_word_len]
             # print("flat_que_tag", flat_input_que_tag_ids.size())
-            print('Here it encodes the tags (SRL) with the tag model, which creates embeddings for the tag ids.')
             tag_output = self.tag_model(flat_input_tag_ids, num_aspect)
-            print(tag_output.shape) # [batch_size, num_aspect, max_seq_len, tag_vocabulary_size] tag_vocabulary_size==10
+            print(tag_output.shape)
+            print(tag_output[0,:,:,:])
             # batch_size, que_len, num_aspect*tag_hidden_size
             tag_output = tag_output.transpose(1, 2).contiguous().view(batch_size,
                                                                       max_seq_len, -1)
-            print(tag_output.shape) # [batch_size, max_seq_len, num_aspect*tag_vocabulary_size]
+            # print(self.dense)
+            print('Densifies tag output: ')
             tag_output = self.dense(tag_output)
-            print(tag_output.shape) # [batch_size, max_seq_len, densified_tag_vocab_size]
-            print('Here it concatenates both things.')
-            sequence_output = torch.cat((bert_output, tag_output), 2) # concat [batch_size, max_word_len, vector_size] and [batch_size, max_seq_len, densified_tag_vocab_size]
-            print(sequence_output.shape) # [batch_size, max_word_len, bert_vector_size+densified_tag_vocab_size]
+            print(tag_output.shape)
+            print(tag_output[0,:,:])
+            #weights = self.dense.get_weights()
+            #print(weights)
+            sequence_output = torch.cat((bert_output, tag_output), 2)
             # print("tag", tag_output.size())
             # print("bert", bert_output.size())
 
         else:
             sequence_output = bert_output
 
-        print('Now the joint learning model starts')
-        first_token_tensor = sequence_output[:, 0] # Take the [CLS] token, so the first of the seq_len
-        print(first_token_tensor.shape) # [batch_size, bert_vector_size+densified_tag_vocab_size]
-        pooled_output = self.pool(first_token_tensor) # a linear layer
-        print(pooled_output.shape) # [batch_size, bert_vector_size+densified_tag_vocab_size]
-        pooled_output = self.activation(pooled_output) # a tanh layer
-        print(pooled_output.shape) # [batch_size, bert_vector_size+densified_tag_vocab_size]
-        pooled_output = self.dropout(pooled_output) # a dropout layer
-        print(pooled_output.shape) # [batch_size, bert_vector_size+densified_tag_vocab_size]
-        # pooled_output = self.aggregate(pooled_output)
-        logits = self.classifier(pooled_output) # a linear layer to get logits of the size of the labels
-        print(logits.shape) # [batch_size, n_labels]
+        first_token_tensor = sequence_output[:, 0]
+        pooled_output = self.pool(first_token_tensor)
+        pooled_output = self.activation(pooled_output)
+        pooled_output = self.dropout(pooled_output)
+        logits = self.classifier(pooled_output)
 
         if labels is not None:
             loss_fct = CrossEntropyLoss()

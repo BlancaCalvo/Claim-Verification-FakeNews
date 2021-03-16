@@ -38,9 +38,12 @@ def map_srl(srl, type=None):
     if type == None:
         return srl
     else:
-        tags1 = {'[PAD]':'PAD', '[CLS]':'[CLS]', '[SEP]':'[SEP]', 'B-V':'V', 'I-V':'V', 'B-ARG0':'ARG0', 'I-ARG0':'ARG0', 'B-ARG1':'ARG1', 'I-ARG1':'ARG1', 'B-ARG2':'ARG2', 'I-ARG2':'ARG2', 'B-ARG4':'ARG4',
-                 'I-ARG4':'ARG4', 'B-ARGM-TMP':'ARGM', 'I-ARGM-TMP':'ARGM', 'B-ARGM-LOC':'ARGM', 'I-ARGM-LOC':'ARGM', 'B-ARGM-CAU':'ARGM', 'I-ARGM-CAU':'ARGM', 'B-ARGM-PRP':'ARGM',
-                 'I-ARGM-PRP':'ARGM', 'O':'O'}
+        tags1 = {'[PAD]': 'PAD', '[CLS]': '[CLS]', '[SEP]': '[SEP]', 'B-V': 'V', 'I-V': 'V', 'B-ARG0': 'ARG0',
+                  'I-ARG0': 'ARG0', 'B-ARG1': 'ARG1', 'I-ARG1': 'ARG1', 'B-ARG2': 'ARG2', 'I-ARG2': 'ARG2', 'B-ARG3':'ARG3', 'I-ARG3':'ARG3', 'B-ARG4': 'ARG4',
+                  'I-ARG4': 'ARG4', 'B-ARGM-TMP': 'TMP', 'I-ARGM-TMP': 'TMP', 'B-ARGM-LOC': 'LOC', 'I-ARGM-LOC': 'LOC',
+                  'B-ARGM-CAU': 'ARGM', 'I-ARGM-CAU': 'ARGM', 'B-ARGM-PRP': 'ARGM',  'B-R-ARG0':'ARG0', 'I-R-ARG0':'ARG0',
+                  'I-ARGM-PRP': 'ARGM', 'O': 'O',  'B-ARGM-MNR':'ARGM', 'I-ARGM-MNR':'ARGM', 'B-ARGM-ADV':'ARGM', 'I-ARGM-ADV': 'ARGM',
+                    'B-ARGM-DIS':'ARGM', 'I-ARGM-DIS':'ARGM'}
         tags_dream = {'[PAD]': 'PAD', '[CLS]': '[CLS]', '[SEP]': '[SEP]', 'B-V': 'verb', 'I-V': 'verb', 'B-ARG0': 'argument',
                   'I-ARG0': 'argument', 'B-ARG1': 'argument', 'I-ARG1': 'argument', 'B-ARG2': 'argument', 'I-ARG2': 'argument', 'B-ARG3':'argument', 'I-ARG3':'argument', 'B-ARG4': 'argument',
                   'I-ARG4': 'argument', 'B-ARGM-TMP': 'temporal', 'I-ARGM-TMP': 'temporal', 'B-ARGM-LOC': 'location', 'I-ARGM-LOC': 'location',
@@ -87,8 +90,7 @@ def read_srl_examples_concat(input, mapping=None):
             examples.append(InputExample(guid=res['index'], text_a=res['claim_srl'], text_b=res['evidence_srl'],label=res['label'], index=res['index']))
             res = dic
     examples.append(InputExample(guid=res['index'], text_a=res['claim_srl'], text_b=res['evidence_srl'], label=res['label'], index=res['index']))
-    #logger.info(map_srl(res['claim_srl'], mapping))
-    #logger.info(map_srl(res['evidence_srl'], mapping))
+    #logger.info(res['claim_srl'], mapping)) crec que la claim no s'està convertint en el mapping, comprovar!!!
     return examples
 
 def flat_accuracy(preds, labels): # from https://medium.com/@aniruddha.choudhury94/part-2-bert-fine-tuning-tutorial-with-pytorch-for-text-classification-on-the-corpus-of-linguistic-18057ce330e1
@@ -151,7 +153,7 @@ if __name__ == "__main__":
     if args.mapping == 'dream':
         tag_tokenizer = TagTokenizer(vocab=['verb', 'argument', '[CLS]', '[SEP]', '[PAD]', 'location', 'temporal', 'O'])
     elif args.mapping == 'tags1':
-        tag_tokenizer = TagTokenizer(vocab=['V', 'ARG1','ARG0','ARG2','ARG4', '[CLS]', '[SEP]', '[PAD]', 'ARGM', 'O'])
+        tag_tokenizer = TagTokenizer(vocab=['V', 'ARG1','ARG0','ARG2', 'ARG3','ARG4', '[CLS]', '[SEP]', '[PAD]', 'TMP', 'LOC', 'ARGM', 'O'])
     else:
         tag_tokenizer = TagTokenizer()
 

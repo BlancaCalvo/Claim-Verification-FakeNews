@@ -40,7 +40,7 @@ args = parser.parse_args()
 #torch.manual_seed(seed)
 
 if args.concat:
-    dev_dataset = read_srl_examples_concat(args.dev_features)
+    dev_dataset = read_srl_examples_concat(args.dev_features, args.mapping)
 else:
     dev_dataset = read_srl_examples(args.dev_features)
 
@@ -53,7 +53,8 @@ dev_encoded_dataset = convert_examples_to_features(dev_dataset, max_seq_length=a
 if args.mapping == 'dream':
     tag_tokenizer = TagTokenizer(vocab=['verb', 'argument', '[CLS]', '[SEP]', '[PAD]', 'location', 'temporal', 'O'])
 elif args.mapping == 'tags1':
-    tag_tokenizer = TagTokenizer(vocab=['V', 'ARG1', 'ARG0', 'ARG2', 'ARG4', '[CLS]', '[SEP]', '[PAD]', 'ARGM', 'O'])
+    tag_tokenizer = TagTokenizer(
+        vocab=['V', 'ARG1', 'ARG0', 'ARG2', 'ARG3', 'ARG4', '[CLS]', '[SEP]', '[PAD]', 'TMP', 'LOC', 'ARGM', 'O'])
 else:
     tag_tokenizer = TagTokenizer()
 

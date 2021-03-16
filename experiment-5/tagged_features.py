@@ -205,7 +205,7 @@ def transform_tag_features(max_num_aspect, features, tag_tokenizer, max_seq_leng
     new_features = []
     lengths_a = []
     lengths_b = []
-    for example in features:
+    for (ex_index, example) in enumerate(features):
         token_tag_sequence_a = example.token_tag_sequence_a
         len_seq_a = example.len_seq_a
         lengths_a.append(token_tag_sequence_a.length())
@@ -241,7 +241,17 @@ def transform_tag_features(max_num_aspect, features, tag_tokenizer, max_seq_leng
                 input_tag_ids.append(input_tag_id)
                 # construct input doc tag ids with same length as input ids
         example.input_tag_ids = input_tag_ids
+
+        if ex_index < 1:
+            logger.info("*** Tag ids Example ***")
+            #logger.info("guid: %s" % (example.guid))
+            #logger.info("Claim Index: %s" % (example.index))
+            #logger.info("tokens a: %s" % token_tag_sequence_a)
+            #logger.info("tokens b: %s" % example.token_tag_sequence_b)
+            logger.info("tag_ids: %s" % " ".join([str(x) for x in example.input_tag_ids]))
+
+
         new_features.append(example)
-    print('N propositions claims: ', sum(lengths_a) / len(lengths_a))
-    print('N propositions evidences: ', sum(lengths_b) / len(lengths_b))
+    #print('N propositions claims: ', sum(lengths_a) / len(lengths_a))
+    #print('N propositions evidences: ', sum(lengths_b) / len(lengths_b))
     return new_features
