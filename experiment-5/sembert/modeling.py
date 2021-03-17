@@ -1560,7 +1560,7 @@ class SelfAttentionLayer(nn.Module):
         self.linear1 = nn.Linear(self.nhid, 64)
         self.relu = nn.ReLU(True)
         self.linear2 = nn.Linear(64, 1)
-        self.index = torch.LongTensor([0])
+        #self.index = torch.LongTensor([0])
         self.tmp = None
         self.own = None
 
@@ -1568,40 +1568,36 @@ class SelfAttentionLayer(nn.Module):
         self.tmp = None
         #print(index)
         print('Batch has shape:', inputs.shape) # [4, 8, 94, 10]
-        print('Batch is in device:', inputs.device.index)  # [4, 8, 94, 10]
+        print('Batch is in device:', inputs.device.index)
         if index > -1:
-            print('Index is:', index)
-            self.index = torch.add(self.index, index).to('cuda:0')
-            print(self.index)
-            self.own = torch.index_select(inputs, 1, self.index)
-            #print('Select just the first proposition:', own.shape) # [4, 1, 94, 10]
+            #print('Index is in:', self.index.device.index)
+            #self.index = torch.add(self.index, index).cuda()#.to('cuda:0')
+            #inputs = inputs.to('cuda:0')
+            #print('Input is in device:', inputs.device.index)
+            index = torch.LongTensor([index]).cuda()#.to('cuda:1')
+            print('Index is in device:', index.device.index)
+            self.own = torch.index_select(inputs, 1, index)
+            #print('Select just one predicate:', self.own.shape) # [4, 1, 94, 10]
             self.own = self.own.repeat(1, self.nins, 1, 1)
-            #print('Now repeat it for as many propositions as there are:', own.shape) # [4, 8, 94, 10]
-            self.tmp = torch.cat((self.own, inputs), 3)
-            #print('Now concat each proposition with this particular one:', tmp.shape) # [4, 8, 94, 20]
+            #print('Now repeat it for as many predicates as there are:', self.own.shape) # [4, 8, 94, 10]
+            self.tmp = torch.cat((self.own, inputs), 3)#.cuda()
+            #print('Now concat each predicate with this particular one:', self.tmp.shape) # [4, 8, 94, 20]
         #attention = self.project(tmp)
         print(self.linear1)
-        #print(self.linear1.device.index)
-        print('Input is in device:',self.tmp.device.index)
-        out1 = self.linear1(self.tmp).to('cuda:0')
-        #print(out1.shape)
-        print('Output is in device:',out1.device.index)
+        out1 = self.linear1(self.tmp)
         out2 = self.relu(out1)
-        #print(out2.shape)
-        #print(out2.device.index)
         attention = self.linear2(out2)
-        #print(attention.device.index)
         weights = F.softmax(attention.squeeze(-1), dim=1)
         outputs = (inputs * weights.unsqueeze(-1)).sum(dim=1)
         return outputs
 
 
 class AttentionLayer(nn.Module):
-    def __init__(self, nins, nhid):
+    def __init__(self, nins, nhid): #nins is number of predicates
         super(AttentionLayer, self).__init__()
         self.nins = nins
         self.nhid = nhid
-        self.attentions = [SelfAttentionLayer(nhid=self.nhid * 2, nins=self.nins) for _ in range(11)]
+        self.attentions = [SelfAttentionLayer(nhid=self.nhid * 2, nins=self.nins) for _ in range(self.nins)]
 
         self.outputs = None
 
@@ -1610,7 +1606,7 @@ class AttentionLayer(nn.Module):
 
     def forward(self, inputs):
         # outputs = torch.cat([att(inputs) for att in self.attentions], dim=1)
-        self.outputs = torch.cat([self.attentions[i](inputs, i, None) for i in range(11)], dim=1).to('cuda:0')
+        self.outputs = torch.cat([self.attentions[i](inputs, i, None) for i in range(self.nins)], dim=1)#.to('cuda:0')
         self.outputs = self.outputs.view(inputs.shape)
         return self.outputs
 
@@ -1625,7 +1621,6 @@ class BertForSequenceClassificationTagWithAgg(BertPreTrainedModel):
 
         self.activation = nn.Tanh()
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
-
         if tag_config is not None:
             hidden_size = config.hidden_size + tag_config.hidden_size
             self.tag_model = TagEmebedding(tag_config)
@@ -1635,7 +1630,8 @@ class BertForSequenceClassificationTagWithAgg(BertPreTrainedModel):
             hidden_size = config.hidden_size
         use_tag = True
         if use_tag:
-            self.pool = nn.Linear(config.hidden_size + tag_config.hidden_size, config.hidden_size + tag_config.hidden_size)
+            self.pool = nn.Linear(config.hidden_size + tag_config.hidden_size,
+                                  config.hidden_size + tag_config.hidden_size)
             self.classifier = nn.Linear(config.hidden_size + tag_config.hidden_size, num_labels)
         else:
             self.pool = nn.Linear(config.hidden_size, config.hidden_size)
@@ -1643,9 +1639,7 @@ class BertForSequenceClassificationTagWithAgg(BertPreTrainedModel):
         self.apply(self.init_bert_weights)
 
     def forward(self, input_ids, index_ids, token_type_ids=None, attention_mask=None, start_end_idx=None, input_tag_ids=None, labels=None, is_claim=False):
-        # THIS IS THE LEFT SIDE OF THE SCHEMA: SUBWORDS TO BERT AND THEN CNN TO MAKE THEM BACK TO WORDS
         sequence_output, _ = self.bert(input_ids, token_type_ids, attention_mask, output_all_encoded_layers=False)
-        #print(sequence_output.shape) # [batch_size, max_seq_len, bert_vector_size]
         no_cuda = False
         batch_size, sub_seq_len, dim = sequence_output.size()
         # sequence_output = sequence_output.unsqueeze(1)
@@ -1653,7 +1647,7 @@ class BertForSequenceClassificationTagWithAgg(BertPreTrainedModel):
         max_seq_len = -1
         max_word_len = self.filter_size
         for se_idx in start_end_idx:
-            num_words = 0 # counts words in sentence
+            num_words = 0
             for item in se_idx:
                 if item[0] != -1 and item[1] != -1:
                     num_subs = item[1] - item[0] + 1
@@ -1680,55 +1674,44 @@ class BertForSequenceClassificationTagWithAgg(BertPreTrainedModel):
             batch_id += 1
 
         batch_start_end_ids = torch.tensor(batch_start_end_ids)
-        #print(batch_start_end_ids.shape) # [batch_size, max_seq_len, 5] # WHY 5?
         batch_start_end_ids = batch_start_end_ids.view(-1)
         sequence_output = sequence_output.view(-1, dim)
         sequence_output = torch.cat([sequence_output.new_zeros((1, dim)), sequence_output], dim=0)
         if not no_cuda:
             batch_start_end_ids = batch_start_end_ids.cuda()
-
         cnn_bert = sequence_output.index_select(0, batch_start_end_ids)
         cnn_bert = cnn_bert.view(batch_size, max_seq_len, max_word_len, dim)
         if not no_cuda:
             cnn_bert = cnn_bert.cuda()
 
         bert_output = self.cnn(cnn_bert, max_word_len)
-        #print(bert_output.shape) # [batch_size, max_word_len, bert_vector_size]
 
-        # THIS IS THE RIGHT SIDE OF THE SCHEMA: TAGGED SENTENCES GET EMBEDDINGS
         use_tag = True
         if use_tag:
-            num_aspect = input_tag_ids.size(1) # that's the number of propositions == 3
-            input_tag_ids = input_tag_ids[:,:,:max_seq_len]
-            #print(input_tag_ids.shape) # [batch_size, num_aspect, max_seq_len==max_word_len]
+            num_aspect = input_tag_ids.size(1)
+            input_tag_ids = input_tag_ids[:, :, :max_seq_len]
             flat_input_tag_ids = input_tag_ids.view(-1, input_tag_ids.size(-1))
             # print("flat_que_tag", flat_input_que_tag_ids.size())
             tag_output = self.tag_model(flat_input_tag_ids, num_aspect)
-            #print('Batch input is in device:', tag_output.device.index)
-            tag_output = tag_output.to('cuda:0')
-            print('Batch input is in device:', tag_output.device.index)
-            #print('Tag embedding:', tag_output.shape) # [batch_size, num_aspect, max_seq_len, tag_embedding_size] tag_embedding_size comes from tag_config.hidden_size == 10
-            tag_output = self.attentions(tag_output) # make each proposition attend the others, ISSUES WITH DEVICES
+
+            print('Instead of linear layer to squeeze predicates, use attention:')
+            tag_output = self.attentions(tag_output)  # make each proposition attend the others, ISSUES WITH DEVICES
             tag_output = torch.max(tag_output, dim=1)[0]
 
             #tag_output = tag_output.transpose(1, 2).contiguous().view(batch_size,
-            #                                                          max_seq_len, -1) # [batch_size, max_seq_len, tag_embedding_size*num_aspect]
+            #                                                          max_seq_len, -1)
             #tag_output = self.dense(tag_output)
-            #print(tag_output.shape) # [batch_size, max_seq_len, densified_tag_embedding_size]
-            sequence_output = torch.cat((bert_output, tag_output), 2) # concat [batch_size, max_word_len, vector_size] and [batch_size, max_seq_len, densified_tag_embedding_size]
-            #print(sequence_output.shape) # [batch_size, max_word_len, bert_vector_size+densified_tag_embedding_size]
+
+            sequence_output = torch.cat((bert_output, tag_output), 2)
 
         else:
             sequence_output = bert_output
 
-        first_token_tensor = sequence_output[:, 0] # Take the [CLS] token, so the first of the seq_len
-        #print(first_token_tensor.shape) # [batch_size, bert_vector_size+densified_tag_vocab_size]
-        pooled_output = self.pool(first_token_tensor) # a linear layer
-        pooled_output = self.activation(pooled_output) # a tanh layer
-        pooled_output = self.dropout(pooled_output) # a dropout layer
-        # pooled_output = self.aggregate(pooled_output)
-        logits = self.classifier(pooled_output) # a linear layer to get logits of the size of the labels
-        #print(logits.shape) # [batch_size, n_labels]
+        first_token_tensor = sequence_output[:, 0]
+        pooled_output = self.pool(first_token_tensor)
+        pooled_output = self.activation(pooled_output)
+        pooled_output = self.dropout(pooled_output)
+        logits = self.classifier(pooled_output)
 
         if labels is not None:
             loss_fct = CrossEntropyLoss()

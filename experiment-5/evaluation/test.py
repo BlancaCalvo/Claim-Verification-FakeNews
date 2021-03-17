@@ -2,10 +2,6 @@ import random, os
 import argparse
 import numpy as np
 import torch
-import torch.optim as optim
-from tqdm import tqdm
-from torch.autograd import Variable
-from torch.utils.data import TensorDataset, DataLoader
 from fever_bert_srl import read_srl_examples, read_srl_examples_concat
 from transformers.models.bert.tokenization_bert import BertTokenizer
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
@@ -14,6 +10,7 @@ from tagged_features import InputExample, convert_examples_to_features, transfor
 from tag_model.tag_tokenization import TagTokenizer
 from tag_model.modeling import TagConfig
 from sembert.modeling import BertForSequenceClassificationTag, BertForSequenceClassificationTagWithAgg
+from allennlp.predictors import Predictor
 
 #from utils import load_bert_features_claim_test
 #from models import GEAR
@@ -24,31 +21,30 @@ parser.add_argument("--dev_features", default='data/srl_features/dev_srl_all.jso
 
 parser.add_argument("--concat", action='store_true', help="Set this flag if you want to concat evidences.")
 parser.add_argument("--aggregate", action='store_true', help="Set this flag if you want to aggregate the evidences.") #does not work yet
-parser.add_argument("--vote", action='store_true', help="Set this flag if you want to make voting system with evidences.")
+parser.add_argument("--no_srl", action='store_true', help="Set this flag if the given dataset does not have srl.")
 parser.add_argument("--max_num_aspect", default=3, type=int, required=False)
 parser.add_argument("--mapping", default=None, type=str, required=False)
-
 parser.add_argument("--seq_length", default=300, type=int, required=False)
 parser.add_argument("--batch_size", default=16, type=int, required=False)
 #parser.add_argument("--cuda_devices", default='-1', type=str, required=False)
 
 args = parser.parse_args()
-#args.cuda = not args.no_cuda and torch.cuda.is_available()
-#seed = 1995
-#random.seed(seed)
-#np.random.seed(seed)
-#torch.manual_seed(seed)
 
-if args.concat:
-    dev_dataset = read_srl_examples_concat(args.dev_features, args.mapping)
+if args.no_srl:
+    print('Here import examples and srl predictor')
+    #dev_dataset = read_examples() look at original sembert training script!
+    srl_predictor = Predictor.from_path("https://storage.googleapis.com/allennlp-public-models/bert-base-srl-2020.11.19.tar.gz")
 else:
-    dev_dataset = read_srl_examples(args.dev_features)
+    dev_dataset = read_srl_examples_concat(args.dev_features, args.mapping)
+    srl_predictor = None
+
+
 
 model_checkpoint = "bert-base-uncased"
 tokenizer = BertTokenizer.from_pretrained(model_checkpoint, do_lower_case=True)
 
 #logger.info('Convert examples to features (VALIDATION).')
-dev_encoded_dataset = convert_examples_to_features(dev_dataset, max_seq_length=args.seq_length, tokenizer=tokenizer, srl_predictor=None)
+dev_encoded_dataset = convert_examples_to_features(dev_dataset, max_seq_length=args.seq_length, tokenizer=tokenizer, srl_predictor=srl_predictor)
 
 if args.mapping == 'dream':
     tag_tokenizer = TagTokenizer(vocab=['verb', 'argument', '[CLS]', '[SEP]', '[PAD]', 'location', 'temporal', 'O'])

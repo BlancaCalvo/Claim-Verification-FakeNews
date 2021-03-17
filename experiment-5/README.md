@@ -32,9 +32,9 @@ python experiment-5/preparation/build_gear_input_set.py
 ### SRL extraction
 
 ```
-CUDA_VISIBLE_DEVICES=0 python experiment-5/SRL_extraction.py --input_file data/gear/gear-train-set-0_001.tsv --output_file data/graph_features/train_srl_all.json --cuda 0 
+CUDA_VISIBLE_DEVICES=0 python experiment-5/SRL_extraction.py --input_file data/gear/gear-train-set-0_001.tsv --output_file data/srl_features/train_srl_all.json --cuda 0 
 
-CUDA_VISIBLE_DEVICES=0 python experiment-5/SRL_extraction.py --input_file data/gear/gear-dev-set-0_001.tsv --output_file data/graph_features/dev_srl_all.json --cuda 0
+CUDA_VISIBLE_DEVICES=0 python experiment-5/SRL_extraction.py --input_file data/gear/gear-dev-set-0_001.tsv --output_file data/srl_features/dev_srl_all.json --cuda 0
 ```
 
 ### BERT base model
@@ -49,6 +49,8 @@ CUDA_VISIBLE_DEVICES=4 python experiment-5/plain_bert/fever_bert.py &> bert_trai
 python experiment-5/fever_bert_srl.py --train_srl_file data/srl_features/train_srl_all.json --dev_srl_file data/srl_features/dev_srl_all.json --mapping dream --concat --cuda_devices 0,1,2 --seq_length 250 
 
 python experiment-5/fever_bert_srl.py --train_srl_file data/srl_features/train_trial.json --dev_srl_file data/srl_features/trial.json --concat --cuda_devices 0,1,2 --seq_length 250 --max_num_aspect 12 --mapping tags1
+
+python experiment-5/fever_bert_srl.py --train_srl_file data/srl_features/train_trial.json --dev_srl_file data/srl_features/trial.json --concat --agg --cuda_devices 0,1,2 --seq_length 250 --max_num_aspect 12
 ```
 
 ## Test

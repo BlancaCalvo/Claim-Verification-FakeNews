@@ -70,14 +70,14 @@ all = merge(bert_results, sembert_12_results, by="V5", suffixes = c(".bert",".se
 
 
 ```{r import_results}
-#sembert_12_output<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/mapping/dev-results.tsv", header = FALSE, sep='\t')
+mapping<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/mapping/dev-results.tsv", header = FALSE, sep='\t')
 
-#sembert_12_results <- sembert_12_output %>%
-#  rowwise() %>%
-#  mutate(output= which.max(list(V1,V2,V3))-1)%>%
-#  mutate(right = sum(V4==output, na.rm=T))
+mapping <- mapping %>%
+  rowwise() %>%
+  mutate(output= which.max(list(V1,V2,V3))-1)%>%
+  mutate(right = sum(V4==output, na.rm=T))
 
-#print(sum(sembert_12_results$right)/nrow(sembert_12_results))
+print(sum(mapping$right)/nrow(mapping))
 
 ```
 
@@ -117,13 +117,13 @@ differing_worse <- all_dev %>%
 
 differing_improve %>%
   #filter(V1 %in% gold_dev$V4)%>%
-  group_by(V2, output.bert)%>%
-  summarise(counts = n())
+  group_by(output.sembert, output.bert)%>%
+  summarise(counts = n(), proportion= n()/nrow(differing_improve), total_differing = nrow(differing_improve))
   
 differing_worse %>%
   #filter(V1 %in% gold_dev$V4)%>%
-  group_by(V2, output.sembert)%>%
-  summarise(counts = n())
+  group_by(output.bert, output.sembert)%>%
+  summarise(counts = n(), proportion= n()/nrow(differing_worse), total_differing = nrow(differing_worse))
 
 ```
 
@@ -133,35 +133,44 @@ gold_dev<- read.table("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/da
 
 ```{r inspection1}
 # inspect claims that just have one evidence in gold_dev, that have label SUPPORT, are labeled wrong in BERT and right in SEMBERT
-ev_1_lb_S <- gold_dev%>%
-  filter(V1=='REFUTES')%>%
-  group_by(V4)%>%
-  distinct(V2,.keep_all= TRUE)%>%
-  mutate(N_evidences = n())%>%
-  filter(N_evidences==1)
+#ev_1_lb_S <- gold_dev%>%
+#  filter(V1=='REFUTES')%>%
+#  group_by(V4)%>%
+#  distinct(V2,.keep_all= TRUE)%>%
+#  mutate(N_evidences = n())%>%
+#  filter(N_evidences==1)
+
+#inspect1 = merge(ev_1_lb_S, differing_worse, by.x=("V4"), by.y=("V1"), suffixes = c(".gold",".retrieved"))
+
+#go <- inspect1%>%
+#  filter(output.sembert==2)%>%
+#  select(ID, output.sembert, V3.gold, V5.gold, V2.gold, V4.retrieved, V5.retrieved, V6.retrieved, V7, V8)
 
 ```
 
 ```{r inspection1}
-inspect1 = merge(ev_1_lb_S, differing_worse, by.x=("V4"), by.y=("V1"), suffixes = c(".gold",".retrieved"))
 
-
-go <- inspect1%>%
+go <- differing%>%
+  filter(right.sembert==1)%>%
+  filter(output.bert==0)%>%
   filter(output.sembert==2)%>%
-  select(ID, output.bert, V3.gold, V5.gold, V2.gold, V4.retrieved, V5.retrieved, V6.retrieved, V7, V8)
+  select(V1, output.bert, output.sembert, V3, V4,V5,V6, V7, V8)
 
 ```
 
 
 #inspect!!
-instance <- go[2,]
-
+instance <- go[1,]
 instance
 
 correspondence%>%
-  filter(claim_index == instance$ID-1)
+  filter(claim_index == instance$V1)
 
-json_data[[1012]]$evidence_srl
+json_data[[72]]$claim_srl
+
+json_data[[72]]$evidence_srl
+
+
 
 
 
