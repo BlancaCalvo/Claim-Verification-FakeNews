@@ -1552,41 +1552,20 @@ class SelfAttentionLayer(nn.Module):
         super(SelfAttentionLayer, self).__init__()
         self.nhid = nhid
         self.nins = nins
-        #self.project = nn.Sequential(
-        #    nn.Linear(nhid, 64),
-        #    nn.ReLU(True),
-        #    nn.Linear(64, 1)
-        #)
-        self.linear1 = nn.Linear(self.nhid, 64)
-        self.relu = nn.ReLU(True)
-        self.linear2 = nn.Linear(64, 1)
-        #self.index = torch.LongTensor([0])
-        self.tmp = None
-        self.own = None
+        self.project = nn.Sequential(
+            nn.Linear(nhid, 64),
+            nn.ReLU(True),
+            nn.Linear(64, 1)
+        )
 
     def forward(self, inputs, index, claims):
-        self.tmp = None
-        #print(index)
-        print('Batch has shape:', inputs.shape) # [4, 8, 94, 10]
-        print('Batch is in device:', inputs.device.index)
+        tmp = None
         if index > -1:
-            #print('Index is in:', self.index.device.index)
-            #self.index = torch.add(self.index, index).cuda()#.to('cuda:0')
-            #inputs = inputs.to('cuda:0')
-            #print('Input is in device:', inputs.device.index)
-            index = torch.LongTensor([index]).cuda()#.to('cuda:1')
-            print('Index is in device:', index.device.index)
-            self.own = torch.index_select(inputs, 1, index)
-            #print('Select just one predicate:', self.own.shape) # [4, 1, 94, 10]
-            self.own = self.own.repeat(1, self.nins, 1, 1)
-            #print('Now repeat it for as many predicates as there are:', self.own.shape) # [4, 8, 94, 10]
-            self.tmp = torch.cat((self.own, inputs), 3)#.cuda()
-            #print('Now concat each predicate with this particular one:', self.tmp.shape) # [4, 8, 94, 20]
-        #attention = self.project(tmp)
-        print(self.linear1)
-        out1 = self.linear1(self.tmp)
-        out2 = self.relu(out1)
-        attention = self.linear2(out2)
+            index = torch.LongTensor([index]).to(inputs.device)
+            own = torch.index_select(inputs, 1, index)
+            own = own.repeat(1, self.nins, 1, 1)
+            tmp = torch.cat((own, inputs), 3)
+        attention = self.project(tmp)
         weights = F.softmax(attention.squeeze(-1), dim=1)
         outputs = (inputs * weights.unsqueeze(-1)).sum(dim=1)
         return outputs
@@ -1597,7 +1576,7 @@ class AttentionLayer(nn.Module):
         super(AttentionLayer, self).__init__()
         self.nins = nins
         self.nhid = nhid
-        self.attentions = [SelfAttentionLayer(nhid=self.nhid * 2, nins=self.nins) for _ in range(self.nins)]
+        self.attentions = nn.ModuleList([SelfAttentionLayer(nhid=self.nhid * 2, nins=self.nins) for _ in range(self.nins)])
 
         self.outputs = None
 
@@ -1621,13 +1600,13 @@ class BertForSequenceClassificationTagWithAgg(BertPreTrainedModel):
 
         self.activation = nn.Tanh()
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
-        if tag_config is not None:
-            hidden_size = config.hidden_size + tag_config.hidden_size
-            self.tag_model = TagEmebedding(tag_config)
-            #self.dense = nn.Linear(tag_config.num_aspect * tag_config.hidden_size, tag_config.hidden_size)
-            self.attentions = AttentionLayer(tag_config.num_aspect, tag_config.hidden_size)  # tag_config.num_aspect, tag_config.hidden_size
-        else:
-            hidden_size = config.hidden_size
+        #if tag_config is not None:
+        hidden_size = config.hidden_size + tag_config.hidden_size
+        self.tag_model = TagEmebedding(tag_config)
+        #self.dense = nn.Linear(tag_config.num_aspect * tag_config.hidden_size, tag_config.hidden_size)
+        self.attentions = AttentionLayer(tag_config.num_aspect, tag_config.hidden_size)  # tag_config.num_aspect, tag_config.hidden_size
+        #else:
+        #    hidden_size = config.hidden_size
         use_tag = True
         if use_tag:
             self.pool = nn.Linear(config.hidden_size + tag_config.hidden_size,
@@ -1678,11 +1657,11 @@ class BertForSequenceClassificationTagWithAgg(BertPreTrainedModel):
         sequence_output = sequence_output.view(-1, dim)
         sequence_output = torch.cat([sequence_output.new_zeros((1, dim)), sequence_output], dim=0)
         if not no_cuda:
-            batch_start_end_ids = batch_start_end_ids.cuda()
+            batch_start_end_ids = batch_start_end_ids.to(sequence_output.device)
         cnn_bert = sequence_output.index_select(0, batch_start_end_ids)
         cnn_bert = cnn_bert.view(batch_size, max_seq_len, max_word_len, dim)
         if not no_cuda:
-            cnn_bert = cnn_bert.cuda()
+            cnn_bert = cnn_bert.to(max_word_len.device)
 
         bert_output = self.cnn(cnn_bert, max_word_len)
 
@@ -1694,7 +1673,7 @@ class BertForSequenceClassificationTagWithAgg(BertPreTrainedModel):
             # print("flat_que_tag", flat_input_que_tag_ids.size())
             tag_output = self.tag_model(flat_input_tag_ids, num_aspect)
 
-            print('Instead of linear layer to squeeze predicates, use attention:')
+            #print('Instead of linear layer to squeeze predicates, use attention:')
             tag_output = self.attentions(tag_output)  # make each proposition attend the others, ISSUES WITH DEVICES
             tag_output = torch.max(tag_output, dim=1)[0]
 

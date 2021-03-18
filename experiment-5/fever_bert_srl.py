@@ -223,7 +223,7 @@ if __name__ == "__main__":
     total_steps = len(train_dataloader) * epochs
     scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_training_steps=total_steps)
 
-    model.to(device)
+    model.to(cuda_devices[0])
 
     # TRAINING LOOP
     random.seed(seed_val)
