@@ -70,7 +70,7 @@ all = merge(bert_results, sembert_12_results, by="V5", suffixes = c(".bert",".se
 
 
 ```{r import_results}
-mapping<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/mapping/dev-results.tsv", header = FALSE, sep='\t')
+mapping<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/mapping/tags1-dev-results.tsv", header = FALSE, sep='\t')
 
 mapping <- mapping %>%
   rowwise() %>%
@@ -133,45 +133,59 @@ gold_dev<- read.table("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/da
 
 ```{r inspection1}
 # inspect claims that just have one evidence in gold_dev, that have label SUPPORT, are labeled wrong in BERT and right in SEMBERT
-#ev_1_lb_S <- gold_dev%>%
-#  filter(V1=='REFUTES')%>%
-#  group_by(V4)%>%
-#  distinct(V2,.keep_all= TRUE)%>%
-#  mutate(N_evidences = n())%>%
-#  filter(N_evidences==1)
+mult_evidences <- gold_dev%>%
+  #filter(V1=='REFUTES')%>%
+  group_by(V4)%>%
+  distinct(V2,.keep_all= TRUE)%>%
+  mutate(N_evidences = n())%>%
+  filter(N_evidences==2)
 
-#inspect1 = merge(ev_1_lb_S, differing_worse, by.x=("V4"), by.y=("V1"), suffixes = c(".gold",".retrieved"))
+mult_evidences = merge(mult_evidences, differing_improve, by.x=("V4"), by.y=("V1"), suffixes = c(".gold",".retrieved"))
 
-#go <- inspect1%>%
-#  filter(output.sembert==2)%>%
-#  select(ID, output.sembert, V3.gold, V5.gold, V2.gold, V4.retrieved, V5.retrieved, V6.retrieved, V7, V8)
+go <- mult_evidences%>%
+  #filter(output.sembert==2)%>%
+  select(V4, V1, output.bert, output.sembert, V3.gold, V5.gold, V2.gold, V4.retrieved, V5.retrieved, V6.retrieved, V7, V8)
 
 ```
 
 ```{r inspection1}
+#gold_unique <- gold_dev %>%
+#  distinct(V3,.keep_all= TRUE)
+
+#inspect = merge(differing, gold_dev, by.x=("V1"), by.y=("V4"), suffixes = c(".retrieved",".gold"))
 
 go <- differing%>%
   filter(right.sembert==1)%>%
   filter(output.bert==0)%>%
-  filter(output.sembert==2)%>%
-  select(V1, output.bert, output.sembert, V3, V4,V5,V6, V7, V8)
+  filter(output.sembert==1)%>%
+  select(V1, V3, V4,V5,V6, V7, V8)
 
 ```
 
 
 #inspect!!
-instance <- go[1,]
+instance <- go[9,]
 instance
 
 correspondence%>%
   filter(claim_index == instance$V1)
 
-json_data[[72]]$claim_srl
+json_data[[1046]]$claim_srl
 
-json_data[[72]]$evidence_srl
+json_data[[1046]]$evidence_srl
 
 
+```{r import_results}
+aggregation<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/aggregation/dev-results.tsv", header = FALSE, sep='\t')
 
+aggregation <- aggregation %>%
+  rowwise() %>%
+  mutate(output= which.max(list(V1,V2,V3))-1)%>%
+  mutate(right = sum(V4==output, na.rm=T))
+
+print(sum(aggregation$right)/nrow(aggregation))
+
+```
 
 
 

@@ -28,11 +28,11 @@ def read_examples(input_file):
             label = line[1]
             claim = line[2]
             evidences = line[3:]
-            new_evidences = []
-            for evidence in evidences:
-                evidence = re.sub(r'\.[a-zA-Z \-é0-9\(\)]*$', '', evidence)  # run this if fever_bert_srl gives bad score
-                new_evidences.append(evidence)
-            evi_concat = ' '.join(new_evidences)
+            #new_evidences = []
+            #for evidence in evidences:
+            #    evidence = re.sub(r'\.[a-zA-Z \-é0-9\(\)]*$', '', evidence)  # run this if fever_bert_srl gives bad score
+            #    new_evidences.append(evidence)
+            evi_concat = ' '.join(evidences)
 
             if label == 'SUPPORTS':
                 label = 0
@@ -49,8 +49,8 @@ def read_examples(input_file):
 
 model_checkpoint = "bert-base-uncased"
 
-train_dataset = read_examples('data/gear/N_gear-train-set-0_001.tsv')
-dev_dataset = read_examples('data/gear/N_gear-dev-set-0_001.tsv')
+train_dataset = read_examples('data/gear/gear-train-set-0_001.tsv')
+dev_dataset = read_examples('data/gear/gear-dev-set-0_001.tsv')
 #train_dataset = read_examples('data/gear/train_trial.tsv')
 #dev_dataset = read_examples('data/gear/trial.tsv')
 
@@ -96,7 +96,7 @@ scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_t
 model.to(device)
 best_epoch = 0
 best_result = 0.0
-dir_path = 'experiment-5/outputs/N-bert-base'
+dir_path = 'experiment-5/outputs/F-base-bert/'
 if not os.path.exists(dir_path):
     os.mkdir(dir_path)
 

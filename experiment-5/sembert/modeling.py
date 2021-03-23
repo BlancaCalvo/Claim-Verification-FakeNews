@@ -1661,7 +1661,7 @@ class BertForSequenceClassificationTagWithAgg(BertPreTrainedModel):
         cnn_bert = sequence_output.index_select(0, batch_start_end_ids)
         cnn_bert = cnn_bert.view(batch_size, max_seq_len, max_word_len, dim)
         if not no_cuda:
-            cnn_bert = cnn_bert.to(max_word_len.device)
+            cnn_bert = cnn_bert.to(sequence_output.device)
 
         bert_output = self.cnn(cnn_bert, max_word_len)
 

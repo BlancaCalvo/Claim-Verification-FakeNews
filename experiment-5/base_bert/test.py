@@ -107,7 +107,7 @@ seeds = [314]
 
 for seed in seeds:
     #base_dir = 'experiment-5/outputs/sembert-vote_%s-concat_%s-agg_%s-%dbatch_size-%dseq_length/' % (str(args.vote), str(args.concat), str(args.aggregate), args.batch_size, args.seq_length)
-    base_dir = 'experiment-5/outputs/bert-base/'
+    base_dir = 'experiment-5/outputs/N-bert-base/'
 
     # FOR SOME REASON KEYS OF THE DICT CONTAIN MODULE., CHECK WHY
     checkpoint = torch.load(base_dir + 'best.pth.tar')

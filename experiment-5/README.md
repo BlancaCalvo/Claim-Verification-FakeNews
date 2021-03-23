@@ -22,10 +22,10 @@ data/retrieved/
 wget -O data/fever/fever.db https://s3-eu-west-1.amazonaws.com/fever.public/wiki_index/fever.db
 
 # Extract the evidence from database
-python experiment-5/preparation/retrieval_to_bert_input.py
+python experiment-5/preprocess/retrieval_to_bert_input.py
 
 # Build the datasets for gear
-python experiment-5/preparation/build_gear_input_set.py
+python experiment-5/preprocess/build_gear_input_set.py
 
 ```
 
@@ -40,7 +40,9 @@ CUDA_VISIBLE_DEVICES=0 python experiment-5/SRL_extraction.py --input_file data/g
 ### BERT base model
 
 ```
-CUDA_VISIBLE_DEVICES=4 python experiment-5/plain_bert/fever_bert.py &> bert_train.log &
+CUDA_VISIBLE_DEVICES=0 python experiment-5/base_bert/fever_bert.py &> bert_train.log &
+
+python experiment-5/base_bert/test.py
 ```
 
 ### SRL model: Sembert with modifications
@@ -58,3 +60,4 @@ python experiment-5/fever_bert_srl.py --train_srl_file data/srl_features/train_t
 ```
 PYTHONPATH=experiment-5 python experiment-5/evaluation/test.py --concat --mapping dream --seq_length 200 --max_num_aspect 12
 ```
+
