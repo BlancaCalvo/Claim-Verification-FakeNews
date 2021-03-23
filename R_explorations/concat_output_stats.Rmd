@@ -18,8 +18,6 @@ library(data.table)
 ```
 
 
-
-
 ```{r import_results}
 json_data <- fromJSON(paste(readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/dev_srl_all.json"), collapse=""))
 
@@ -39,8 +37,72 @@ colnames(correspondence) <- c("claim_index", "evidence_index")
 ```
 
 
+```{r dev}
+dev<- read.table("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/dev_data_new.tsv", sep="\t", header=FALSE, comment.char="#", na.strings=".", stringsAsFactors=FALSE, quote="", fill=TRUE)
+
+
+#all_dev = merge(head(dev, -1), all, by.x=("V1"), by.y=("V5"))
+
+
+#all_dev %>%
+#  group_by(right.sembert)%>%
+#  summarise(len_claim=mean(nchar(V3)), len_evidences = mean(nchar(V4)+nchar(V5)+nchar(V6)+nchar(V7)+nchar(V8)))
+
+```
+
+
+```{r dev}
+gold_dev<- read.table("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/gold_evidence_dev.tsv", sep="\t", header=FALSE, comment.char="#", na.strings=".", stringsAsFactors=FALSE, quote="", fill=TRUE)
+```
+
+
+```{r compare_function}
+table_results <- function(results1, results2) {
+  
+  right1 = results1$right
+  right2 = results2$right
+
+  differing_rows = which(right1 != right2, arr.ind = FALSE)
+  
+  #bert_results <- cbind(bert_results, V5 = aggregation_results$V5) # I delete one row to match
+
+  all = merge(results1, results2, by="V5", suffixes = c(".1",".2"))
+
+  all_dev = merge(dev, all, by.x=("V1"), by.y=("V5"))
+
+  all_dev$ID <- seq.int(nrow(all_dev))
+
+
+  all_dev$ID <- seq.int(nrow(all_dev))
+
+  differing <- all_dev %>%
+  filter(ID %in% differing_rows)
+
+differing_improve <- all_dev %>%
+  filter(ID %in% which(results1$right==0 & results2$right==1, arr.ind = FALSE))
+
+differing_worse <- all_dev %>%
+  filter(ID %in% which(results1$right==1 & results2$right==0, arr.ind = FALSE))
+
+differing_improve %>%
+  #filter(V1 %in% gold_dev$V4)%>%
+  group_by(output.1, output.2)%>%
+  summarise(counts = n(), proportion= n()/nrow(differing_improve), total_differing = nrow(differing_improve))%>%
+  print()
+  
+differing_worse %>%
+  #filter(V1 %in% gold_dev$V4)%>%
+  group_by(output.1, output.2)%>%
+  summarise(counts = n(), proportion= n()/nrow(differing_worse), total_differing = nrow(differing_worse))%>%
+  print()
+
+return(differing)
+}
+
+```
+
 ```{r import_results}
-bert_results<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/bert_base/dev-results.tsv", header = FALSE, sep='\t')
+bert_results<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/bert_base/N_dev_results.tsv", header = FALSE, sep='\t')
 
 bert_results <- bert_results %>%
   rowwise() %>%
@@ -48,6 +110,9 @@ bert_results <- bert_results %>%
   mutate(right = sum(V4==output, na.rm=T))
 
 print(sum(bert_results$right)/nrow(bert_results))
+
+bert_results <- cbind(bert_results, V5 = dev$V1) # I delete one row to match
+
 ```
 
 ```{r import_results}
@@ -62,89 +127,72 @@ print(sum(sembert_12_results$right)/nrow(sembert_12_results))
 
 ```
 
-```{r add_indx}
-bert_results <- cbind(head(bert_results, -1), V5 = sembert_12_results$V5) # I delete one row to match
+```{r comparison}
 
-all = merge(bert_results, sembert_12_results, by="V5", suffixes = c(".bert",".sembert"))
+bert_small <- head(bert_results, -1)
+
+differing <- table_results(bert_small, sembert_12_results)
+
 ```
 
 
 ```{r import_results}
-mapping<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/mapping/tags1-dev-results.tsv", header = FALSE, sep='\t')
+aggregation<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/aggregation/dev-results.tsv", header = FALSE, sep='\t')
 
-mapping <- mapping %>%
+aggregation_results <- aggregation %>%
   rowwise() %>%
   mutate(output= which.max(list(V1,V2,V3))-1)%>%
   mutate(right = sum(V4==output, na.rm=T))
 
-print(sum(mapping$right)/nrow(mapping))
+print(sum(aggregation_results$right)/nrow(aggregation_results))
+
+```
+
+```{r comparison}
+
+table_results(bert_results, aggregation_results)
+
+#table_results(sembert_small, aggregation_results)
 
 ```
 
 
-```{r dev}
-dev<- read.table("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/dev_data_new.tsv", sep="\t", header=FALSE, comment.char="#", na.strings=".", stringsAsFactors=FALSE, quote="", fill=TRUE)
+```{r import_results}
+dream_mapping <- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/mapping/dream-dev-results.tsv", header = FALSE, sep='\t')
 
+dream_mapping_results <- dream_mapping %>%
+  rowwise() %>%
+  mutate(output= which.max(list(V1,V2,V3))-1)%>%
+  mutate(right = sum(V4==output, na.rm=T))
 
-all_dev = merge(head(dev, -1), all, by.x=("V1"), by.y=("V5"))
-
-
-all_dev %>%
-  group_by(right.sembert)%>%
-  summarise(len_claim=mean(nchar(V3)), len_evidences = mean(nchar(V4)+nchar(V5)+nchar(V6)+nchar(V7)+nchar(V8)))
-
-```
-
-```{r dev}
-
-bert_right = bert_results$right
-sembert_12_right = sembert_12_results$right
-
-differing_rows = which(bert_right != sembert_12_right, arr.ind = FALSE)
-
-#differing_rows_improve = which(bert_comparison$right==0 & sembert_12_results$right==1, arr.ind = FALSE)
-
-all_dev$ID <- seq.int(nrow(all_dev))
-
-differing <- all_dev %>%
-  filter(ID %in% differing_rows)
-
-differing_improve <- all_dev %>%
-  filter(ID %in% which(bert_results$right==0 & sembert_12_results$right==1, arr.ind = FALSE))
-
-differing_worse <- all_dev %>%
-  filter(ID %in% which(bert_results$right==1 & sembert_12_results$right==0, arr.ind = FALSE))
-
-differing_improve %>%
-  #filter(V1 %in% gold_dev$V4)%>%
-  group_by(output.sembert, output.bert)%>%
-  summarise(counts = n(), proportion= n()/nrow(differing_improve), total_differing = nrow(differing_improve))
-  
-differing_worse %>%
-  #filter(V1 %in% gold_dev$V4)%>%
-  group_by(output.bert, output.sembert)%>%
-  summarise(counts = n(), proportion= n()/nrow(differing_worse), total_differing = nrow(differing_worse))
+print(sum(dream_mapping_results$right)/nrow(dream_mapping_results))
 
 ```
 
-```{r dev}
-gold_dev<- read.table("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/gold_evidence_dev.tsv", sep="\t", header=FALSE, comment.char="#", na.strings=".", stringsAsFactors=FALSE, quote="", fill=TRUE)
+```{r comparison}
+
+table_results(bert_results, dream_mapping_results)
+
+
 ```
 
-```{r inspection1}
-# inspect claims that just have one evidence in gold_dev, that have label SUPPORT, are labeled wrong in BERT and right in SEMBERT
-mult_evidences <- gold_dev%>%
-  #filter(V1=='REFUTES')%>%
-  group_by(V4)%>%
-  distinct(V2,.keep_all= TRUE)%>%
-  mutate(N_evidences = n())%>%
-  filter(N_evidences==2)
 
-mult_evidences = merge(mult_evidences, differing_improve, by.x=("V4"), by.y=("V1"), suffixes = c(".gold",".retrieved"))
+```{r import_results}
+tag_mapping<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/mapping/tags1-dev-results.tsv", header = FALSE, sep='\t')
 
-go <- mult_evidences%>%
-  #filter(output.sembert==2)%>%
-  select(V4, V1, output.bert, output.sembert, V3.gold, V5.gold, V2.gold, V4.retrieved, V5.retrieved, V6.retrieved, V7, V8)
+tag_mapping_results <- tag_mapping %>%
+  rowwise() %>%
+  mutate(output= which.max(list(V1,V2,V3))-1)%>%
+  mutate(right = sum(V4==output, na.rm=T))
+
+print(sum(tag_mapping_results$right)/nrow(tag_mapping_results))
+
+```
+
+```{r comparison}
+
+table_results(bert_results, tag_mapping_results)
+
 
 ```
 
@@ -156,38 +204,20 @@ go <- mult_evidences%>%
 
 go <- differing%>%
   filter(right.sembert==1)%>%
-  filter(output.bert==0)%>%
-  filter(output.sembert==1)%>%
+  filter(output.bert==1)%>%
+  filter(output.sembert==0)%>%
   select(V1, V3, V4,V5,V6, V7, V8)
 
 ```
 
 
 #inspect!!
-instance <- go[9,]
+instance <- go[16,]
 instance
 
 correspondence%>%
   filter(claim_index == instance$V1)
 
-json_data[[1046]]$claim_srl
+json_data[[25158]]$claim_srl
 
-json_data[[1046]]$evidence_srl
-
-
-```{r import_results}
-aggregation<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/aggregation/dev-results.tsv", header = FALSE, sep='\t')
-
-aggregation <- aggregation %>%
-  rowwise() %>%
-  mutate(output= which.max(list(V1,V2,V3))-1)%>%
-  mutate(right = sum(V4==output, na.rm=T))
-
-print(sum(aggregation$right)/nrow(aggregation))
-
-```
-
-
-
-
-
+json_data[[25158]]$evidence_srl
