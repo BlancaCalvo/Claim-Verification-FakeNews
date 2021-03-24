@@ -68,6 +68,7 @@ table_results <- function(results1, results2) {
 
   all = merge(results1, results2, by="V5", suffixes = c(".1",".2"))
 
+  #all_dev = merge(dev, all, by=("V5"))
   all_dev = merge(dev, all, by.x=("V1"), by.y=("V5"))
 
   all_dev$ID <- seq.int(nrow(all_dev))
@@ -105,13 +106,14 @@ return(differing)
 bert_results<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/bert_base/N_dev_results.tsv", header = FALSE, sep='\t')
 
 bert_results <- bert_results %>%
+  filter(V4!=2)%>%
   rowwise() %>%
   mutate(output= which.max(list(V1,V2,V3))-1)%>%
   mutate(right = sum(V4==output, na.rm=T))
 
 print(sum(bert_results$right)/nrow(bert_results))
 
-bert_results <- cbind(bert_results, V5 = dev$V1) # I delete one row to match
+#bert_results <- cbind(bert_results, V5 = dev$V1) # I delete one row to match
 
 ```
 
@@ -119,6 +121,7 @@ bert_results <- cbind(bert_results, V5 = dev$V1) # I delete one row to match
 sembert_12_results<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_12/dev-results.tsv", header = FALSE, sep='\t')
 
 sembert_12_results <- sembert_12_results %>%
+  filter(V4!=2)%>%
   rowwise() %>%
   mutate(output= which.max(list(V1,V2,V3))-1)%>%
   mutate(right = sum(V4==output, na.rm=T))
@@ -140,6 +143,7 @@ differing <- table_results(bert_small, sembert_12_results)
 aggregation<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/aggregation/dev-results.tsv", header = FALSE, sep='\t')
 
 aggregation_results <- aggregation %>%
+  filter(V4!=2)%>%
   rowwise() %>%
   mutate(output= which.max(list(V1,V2,V3))-1)%>%
   mutate(right = sum(V4==output, na.rm=T))
@@ -161,6 +165,7 @@ table_results(bert_results, aggregation_results)
 dream_mapping <- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/mapping/dream-dev-results.tsv", header = FALSE, sep='\t')
 
 dream_mapping_results <- dream_mapping %>%
+  filter(V4!=2)%>%
   rowwise() %>%
   mutate(output= which.max(list(V1,V2,V3))-1)%>%
   mutate(right = sum(V4==output, na.rm=T))
@@ -181,6 +186,7 @@ table_results(bert_results, dream_mapping_results)
 tag_mapping<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/mapping/tags1-dev-results.tsv", header = FALSE, sep='\t')
 
 tag_mapping_results <- tag_mapping %>%
+  filter(V4!=2)%>%
   rowwise() %>%
   mutate(output= which.max(list(V1,V2,V3))-1)%>%
   mutate(right = sum(V4==output, na.rm=T))
@@ -196,6 +202,21 @@ table_results(bert_results, tag_mapping_results)
 
 ```
 
+```{r import_results}
+f_bert_results<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/bert_base/F-dev-results.tsv", header = FALSE, sep='\t')
+
+f_bert_results <- f_bert_results %>%
+  #filter(V4!=2)%>%
+  rowwise() %>%
+  mutate(output= which.max(list(V1,V2,V3))-1)%>%
+  mutate(right = sum(V4==output, na.rm=T))
+
+print(sum(f_bert_results$right)/nrow(f_bert_results))
+
+f_bert_results <- cbind(f_bert_results, V5 = dev$V1) 
+
+```
+
 ```{r inspection1}
 #gold_unique <- gold_dev %>%
 #  distinct(V3,.keep_all= TRUE)
@@ -203,7 +224,7 @@ table_results(bert_results, tag_mapping_results)
 #inspect = merge(differing, gold_dev, by.x=("V1"), by.y=("V4"), suffixes = c(".retrieved",".gold"))
 
 go <- differing%>%
-  filter(right.sembert==1)%>%
+  filter(right.sembert==0)%>%
   filter(output.bert==1)%>%
   filter(output.sembert==0)%>%
   select(V1, V3, V4,V5,V6, V7, V8)
@@ -212,7 +233,7 @@ go <- differing%>%
 
 
 #inspect!!
-instance <- go[16,]
+instance <- go[12,]
 instance
 
 correspondence%>%

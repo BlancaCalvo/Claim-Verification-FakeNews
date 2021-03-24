@@ -57,7 +57,7 @@ random.seed(seed)
 np.random.seed(seed)
 torch.manual_seed(seed)
 
-dev_dataset = read_examples('data/gear/gear-dev-set-0_001.tsv')
+dev_dataset = read_examples('data/gear/N_gear-dev-set-0_001.tsv')
 
 model_checkpoint = "bert-base-uncased"
 #tokenizer = BertTokenizer.from_pretrained(model_checkpoint, do_lower_case=True)
@@ -107,7 +107,7 @@ seeds = [314]
 
 for seed in seeds:
     #base_dir = 'experiment-5/outputs/sembert-vote_%s-concat_%s-agg_%s-%dbatch_size-%dseq_length/' % (str(args.vote), str(args.concat), str(args.aggregate), args.batch_size, args.seq_length)
-    base_dir = 'experiment-5/outputs/N-bert-base/'
+    base_dir = 'experiment-5/outputs/F-base-bert/'
 
     # FOR SOME REASON KEYS OF THE DICT CONTAIN MODULE., CHECK WHY
     checkpoint = torch.load(base_dir + 'best.pth.tar')
