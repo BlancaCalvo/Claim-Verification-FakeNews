@@ -1,11 +1,14 @@
 ---
 title: "Model results"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 
 ```{r setup, include=FALSE}
 knitr::opts_knit$set(root.dir = 'C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/')
+knitr::opts_chunk$set(echo = FALSE, message = FALSE)
 library(dplyr)
 library(ggplot2)
 library(compare)
@@ -18,7 +21,7 @@ library(data.table)
 ```
 
 
-```{r import_results}
+```{r ce1, include=FALSE, eval=FALSE}
 json_data <- fromJSON(paste(readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/dev_srl_all.json"), collapse=""))
 
 json_data[[1]]$evidence_srl$verbs[[1]]$tags
@@ -34,10 +37,11 @@ for (i in 1:length(json_data)){
 
 correspondence <- do.call(rbind.data.frame, Map('c', list_index, list_i))
 colnames(correspondence) <- c("claim_index", "evidence_index")
+
 ```
 
 
-```{r dev}
+```{r ce2}
 dev<- read.table("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/dev_data_new.tsv", sep="\t", header=FALSE, comment.char="#", na.strings=".", stringsAsFactors=FALSE, quote="", fill=TRUE)
 
 
@@ -51,12 +55,12 @@ dev<- read.table("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/ge
 ```
 
 
-```{r dev}
+```{r ce3, include=FALSE, eval=FALSE}
 gold_dev<- read.table("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/gold_evidence_dev.tsv", sep="\t", header=FALSE, comment.char="#", na.strings=".", stringsAsFactors=FALSE, quote="", fill=TRUE)
 ```
 
 
-```{r compare_function}
+```{r ce4}
 table_results <- function(results1, results2) {
   
   right1 = results1$right
@@ -78,6 +82,8 @@ table_results <- function(results1, results2) {
 
   differing <- all_dev %>%
   filter(ID %in% differing_rows)
+  
+
 
 differing_improve <- all_dev %>%
   filter(ID %in% which(results1$right==0 & results2$right==1, arr.ind = FALSE))
@@ -100,109 +106,158 @@ differing_worse %>%
 return(differing)
 }
 
+heatmap_errors <- function(results) {
+  results$output = as.factor(results$output)
+results$V4 = as.factor(results$V4)
+
+results %>%
+  group_by(output,V4) %>%
+  summarise(count=n()) %>%
+  as.data.frame()%>%
+  ggplot(aes(x=output,y=V4,fill=count))+
+  geom_tile()+ 
+  geom_text(aes(label = round(count, 1))) +
+  scale_fill_gradient(low = "white", high = "#4186BE") +
+  labs(x="Predited",y="Truth")+
+  scale_x_discrete(labels = c("SUPPORTS", "REFUTES", "NEI"))+
+  scale_y_discrete(labels = c("NEI","REFUTES", "SUPPORTS"), limits = rev)
+
+}
+
 ```
 
-```{r import_results}
+
+## Results from base_bert
+
+```{r ce5}
 bert_results<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/bert_base/N_dev_results.tsv", header = FALSE, sep='\t')
 
 bert_results <- bert_results %>%
-  filter(V4!=2)%>%
+  #filter(V4!=2)%>%
   rowwise() %>%
   mutate(output= which.max(list(V1,V2,V3))-1)%>%
   mutate(right = sum(V4==output, na.rm=T))
 
 print(sum(bert_results$right)/nrow(bert_results))
 
-#bert_results <- cbind(bert_results, V5 = dev$V1) # I delete one row to match
+bert_results <- cbind(bert_results, V5 = dev$V1) # I delete one row to match
+
+heatmap_errors(bert_results)
 
 ```
 
-```{r import_results}
+## Results from sembert
+
+```{r ce6}
 sembert_12_results<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_12/dev-results.tsv", header = FALSE, sep='\t')
 
 sembert_12_results <- sembert_12_results %>%
-  filter(V4!=2)%>%
+  #filter(V4!=2)%>%
   rowwise() %>%
   mutate(output= which.max(list(V1,V2,V3))-1)%>%
   mutate(right = sum(V4==output, na.rm=T))
 
 print(sum(sembert_12_results$right)/nrow(sembert_12_results))
 
+#table(sembert_12_results[, c("output", "V4")])
+
+heatmap_errors(sembert_12_results)
+
 ```
 
-```{r comparison}
+### Error comparison base_bert VS sembert
+
+```{r ce7}
 
 bert_small <- head(bert_results, -1)
 
 differing <- table_results(bert_small, sembert_12_results)
 
+
 ```
 
+## Results from sembert with Attention layer between propositions (sembert_att)
 
-```{r import_results}
+```{r ce8}
 aggregation<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/aggregation/dev-results.tsv", header = FALSE, sep='\t')
 
 aggregation_results <- aggregation %>%
-  filter(V4!=2)%>%
+  #filter(V4!=2)%>%
   rowwise() %>%
   mutate(output= which.max(list(V1,V2,V3))-1)%>%
   mutate(right = sum(V4==output, na.rm=T))
 
 print(sum(aggregation_results$right)/nrow(aggregation_results))
 
+heatmap_errors(aggregation_results)
+
 ```
 
-```{r comparison}
+### Comparison base_bert and sembert_att
 
-table_results(bert_results, aggregation_results)
+```{r ce9}
+
+d<-table_results(bert_results, aggregation_results)
 
 #table_results(sembert_small, aggregation_results)
 
 ```
 
+## Results from sembert with the DREAM mapping (sembert_dream)
 
-```{r import_results}
+```{r ce10}
 dream_mapping <- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/mapping/dream-dev-results.tsv", header = FALSE, sep='\t')
 
 dream_mapping_results <- dream_mapping %>%
-  filter(V4!=2)%>%
+  #filter(V4!=2)%>%
   rowwise() %>%
   mutate(output= which.max(list(V1,V2,V3))-1)%>%
   mutate(right = sum(V4==output, na.rm=T))
 
 print(sum(dream_mapping_results$right)/nrow(dream_mapping_results))
 
-```
-
-```{r comparison}
-
-table_results(bert_results, dream_mapping_results)
-
+heatmap_errors(dream_mapping_results)
 
 ```
 
+### Comparison between base_bert and sembert_dream
 
-```{r import_results}
+```{r ce11}
+
+d<-table_results(bert_results, dream_mapping_results)
+
+
+```
+
+## Results sembert with more tags (sembert_tags1)
+
+```{r ce12}
 tag_mapping<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/mapping/tags1-dev-results.tsv", header = FALSE, sep='\t')
 
 tag_mapping_results <- tag_mapping %>%
-  filter(V4!=2)%>%
+  #filter(V4!=2)%>%
   rowwise() %>%
   mutate(output= which.max(list(V1,V2,V3))-1)%>%
   mutate(right = sum(V4==output, na.rm=T))
 
 print(sum(tag_mapping_results$right)/nrow(tag_mapping_results))
 
-```
+#mat <- table(tag_mapping_results[, c("output", "V4")])
 
-```{r comparison}
-
-table_results(bert_results, tag_mapping_results)
-
+heatmap_errors(tag_mapping_results)
 
 ```
 
-```{r import_results}
+### Comparison base_bert and sembert_tags1
+
+```{r ce14}
+
+d<-table_results(bert_results, tag_mapping_results)
+
+
+```
+
+```{r ce15, include=FALSE, eval=FALSE}
 f_bert_results<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/bert_base/F-dev-results.tsv", header = FALSE, sep='\t')
 
 f_bert_results <- f_bert_results %>%
@@ -217,28 +272,30 @@ f_bert_results <- cbind(f_bert_results, V5 = dev$V1)
 
 ```
 
-```{r inspection1}
+```{r inspection1, include=FALSE, eval=FALSE}
 #gold_unique <- gold_dev %>%
 #  distinct(V3,.keep_all= TRUE)
 
 #inspect = merge(differing, gold_dev, by.x=("V1"), by.y=("V4"), suffixes = c(".retrieved",".gold"))
 
 go <- differing%>%
-  filter(right.sembert==0)%>%
-  filter(output.bert==1)%>%
-  filter(output.sembert==0)%>%
+  filter(right.2==0)%>%
+  filter(output.1==1)%>%
+  filter(output.2==0)%>%
   select(V1, V3, V4,V5,V6, V7, V8)
-
-```
-
 
 #inspect!!
 instance <- go[12,]
 instance
 
-correspondence%>%
+c <- correspondence%>%
   filter(claim_index == instance$V1)
 
-json_data[[25158]]$claim_srl
+json_data[[strtoi(c[2,1])]]$claim_srl
 
-json_data[[25158]]$evidence_srl
+json_data[[strtoi(c[2,1])]]$evidence_srl
+
+```
+
+
+
