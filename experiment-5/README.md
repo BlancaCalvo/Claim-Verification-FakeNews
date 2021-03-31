@@ -32,9 +32,9 @@ python experiment-5/preprocess/build_gear_input_set.py
 ### SRL extraction
 
 ```
-CUDA_VISIBLE_DEVICES=0 python experiment-5/SRL_extraction.py --input_file data/gear/gear-train-set-0_001.tsv --output_file data/srl_features/train_srl_all.json --cuda 0 
+CUDA_VISIBLE_DEVICES=0 python experiment-5/SRL_extraction.py --input_file data/gear/N_gear-train-set-0_001.tsv --output_file data/srl_features/train_srl_all.json --cuda 0 
 
-CUDA_VISIBLE_DEVICES=0 python experiment-5/SRL_extraction.py --input_file data/gear/gear-dev-set-0_001.tsv --output_file data/srl_features/dev_srl_all.json --cuda 0
+CUDA_VISIBLE_DEVICES=1 python experiment-5/SRL_extraction.py --input_file data/gear/N_gear-dev-set-0_001.tsv --output_file data/srl_features/N_dev_srl_all.json --cuda 0
 ```
 
 ### BERT base model
@@ -58,6 +58,6 @@ python experiment-5/fever_bert_srl.py --train_srl_file data/srl_features/train_t
 ## Test
 
 ```
-PYTHONPATH=experiment-5 python experiment-5/evaluation/test.py --concat --mapping dream --seq_length 200 --max_num_aspect 12
+PYTHONPATH=experiment-5 python experiment-5/evaluation/test.py --concat --aggregate --mapping tags1 --seq_length 250 --max_num_aspect 12 --batch_size 20
 ```
 

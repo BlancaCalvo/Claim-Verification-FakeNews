@@ -21,26 +21,6 @@ library(data.table)
 ```
 
 
-```{r ce1, include=FALSE, eval=FALSE}
-json_data <- fromJSON(paste(readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/dev_srl_all.json"), collapse=""))
-
-json_data[[1]]$evidence_srl$verbs[[1]]$tags
-
-list_index = list()
-list_i = list()
-
-for (i in 1:length(json_data)){
-  #print(i)
-  list_index = append(list_index,json_data[[i]]$index)
-  list_i = append(list_i, i)
-} 
-
-correspondence <- do.call(rbind.data.frame, Map('c', list_index, list_i))
-colnames(correspondence) <- c("claim_index", "evidence_index")
-
-```
-
-
 ```{r ce2}
 dev<- read.table("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/dev_data_new.tsv", sep="\t", header=FALSE, comment.char="#", na.strings=".", stringsAsFactors=FALSE, quote="", fill=TRUE)
 
@@ -52,11 +32,6 @@ dev<- read.table("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/ge
 #  group_by(right.sembert)%>%
 #  summarise(len_claim=mean(nchar(V3)), len_evidences = mean(nchar(V4)+nchar(V5)+nchar(V6)+nchar(V7)+nchar(V8)))
 
-```
-
-
-```{r ce3, include=FALSE, eval=FALSE}
-gold_dev<- read.table("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/gold_evidence_dev.tsv", sep="\t", header=FALSE, comment.char="#", na.strings=".", stringsAsFactors=FALSE, quote="", fill=TRUE)
 ```
 
 
@@ -171,7 +146,7 @@ heatmap_errors(sembert_12_results)
 
 bert_small <- head(bert_results, -1)
 
-differing <- table_results(bert_small, sembert_12_results)
+d <- table_results(bert_small, sembert_12_results)
 
 
 ```
@@ -252,7 +227,7 @@ heatmap_errors(tag_mapping_results)
 
 ```{r ce14}
 
-d<-table_results(bert_results, tag_mapping_results)
+differing<-table_results(bert_results, tag_mapping_results)
 
 
 ```
@@ -272,6 +247,45 @@ f_bert_results <- cbind(f_bert_results, V5 = dev$V1)
 
 ```
 
+## Results sembert with tags1+attention
+
+```{r ce16}
+att_tag<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/agg_tags1/dev-results.tsv", header = FALSE, sep='\t')
+
+att_tag_results <- att_tag %>%
+  #filter(V4!=2)%>%
+  rowwise() %>%
+  mutate(output= which.max(list(V1,V2,V3))-1)%>%
+  mutate(right = sum(V4==output, na.rm=T))
+
+print(sum(att_tag_results$right)/nrow(att_tag_results))
+
+#mat <- table(tag_mapping_results[, c("output", "V4")])
+
+heatmap_errors(att_tag_results)
+```
+
+
+
+```{r ce1, include=FALSE, eval=FALSE}
+json_data <- fromJSON(paste(readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/dev_srl_all.json"), collapse=""))
+
+json_data[[1]]$evidence_srl$verbs[[1]]$tags
+
+list_index = list()
+list_i = list()
+
+for (i in 1:length(json_data)){
+  #print(i)
+  list_index = append(list_index,json_data[[i]]$index)
+  list_i = append(list_i, i)
+} 
+
+correspondence <- do.call(rbind.data.frame, Map('c', list_index, list_i))
+colnames(correspondence) <- c("claim_index", "evidence_index")
+
+```
+
 ```{r inspection1, include=FALSE, eval=FALSE}
 #gold_unique <- gold_dev %>%
 #  distinct(V3,.keep_all= TRUE)
@@ -281,21 +295,126 @@ f_bert_results <- cbind(f_bert_results, V5 = dev$V1)
 go <- differing%>%
   filter(right.2==0)%>%
   filter(output.1==1)%>%
-  filter(output.2==0)%>%
+  filter(output.2==2)%>%
   select(V1, V3, V4,V5,V6, V7, V8)
 
-#inspect!!
-instance <- go[12,]
+```
+
+```{r inspection2, include=FALSE, eval=FALSE}
+
+instance <- go[1,]
 instance
 
+#index = 1852
+#go %>%
+#  filter(V5==index)%>%
+#  print()
+
 c <- correspondence%>%
-  filter(claim_index == instance$V1)
+  filter(claim_index == instance$V1) #index)
 
-json_data[[strtoi(c[2,1])]]$claim_srl
+print(json_data[[strtoi(c[1,2])]]$claim_srl)
 
-json_data[[strtoi(c[2,1])]]$evidence_srl
+for (i in 1:nrow(c)){
+  print(i)
+  print(json_data[[strtoi(c[i,2])]]$evidence_srl)
+}
 
 ```
+
+
+
+```{r ce17, include=FALSE, eval=FALSE}
+gold_dev<- read.table("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/gold_evidence_dev.tsv", sep="\t", header=FALSE, comment.char="#", na.strings=".", stringsAsFactors=FALSE, quote="", fill=TRUE)
+```
+
+
+```{r ce18, include=FALSE, eval=FALSE}
+
+library(jsonlite)
+library(dplyr)
+
+lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/retrieved/dev.ensembles.s10.jsonl")
+lines <- lapply(lines, fromJSON)
+lines <- lapply(lines, unlist)
+x <- bind_rows(lines)
+```
+
+```{r ce19, include=FALSE, eval=TRUE}
+x <- scan("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/multi-hop-index.txt", what="", sep="\n")
+# Separate elements by one or more whitepace
+y <- strsplit(x, "[[:space:]]+")
+```
+
+
+### Multi-hop Error analysis
+
+```{r ce20}
+heatmap_errors_multi <- function(results) {
+  results$output = as.factor(results$output)
+results$V4 = as.factor(results$V4)
+
+results %>%
+  group_by(output,V4) %>%
+  summarise(count=n()) %>%
+  as.data.frame()%>%
+  ggplot(aes(x=output,y=V4,fill=count))+
+  geom_tile()+ 
+  geom_text(aes(label = round(count, 1))) +
+  scale_fill_gradient(low = "white", high = "#4186BE") +
+  labs(x="Predited",y="Truth")+
+  scale_x_discrete(labels = c("SUPPORTS", "REFUTES", "NEI"))+
+  scale_y_discrete(labels = c("REFUTES", "SUPPORTS"), limits = rev)
+
+}
+
+multi <- bert_results%>%
+  filter(V5 %in% y)
+
+print(sum(multi$right)/nrow(multi))
+
+heatmap_errors_multi(multi)
+
+multi_sem <- sembert_12_results%>%
+  filter(V5 %in% y)
+
+print(sum(multi_sem$right)/nrow(multi_sem))
+
+heatmap_errors_multi(multi_sem)
+
+multi_sem_tags1 <- tag_mapping_results%>%
+  filter(V5 %in% y)
+
+print(sum(multi_sem_tags1$right)/nrow(multi_sem_tags1))
+
+heatmap_errors_multi(multi_sem_tags1)
+
+# agg <- aggregation_results%>%
+#   filter(V5 %in% y)
+# 
+# print(sum(agg$right)/nrow(agg))
+# 
+# heatmap_errors_multi(agg)
+# 
+# dream <- dream_mapping_results%>%
+#   filter(V5 %in% y)
+# 
+# print(sum(dream$right)/nrow(dream))
+# 
+# heatmap_errors_multi(dream)
+# 
+# att <- att_tag_results%>%
+#   filter(V5 %in% y)
+# 
+# print(sum(att$right)/nrow(att))
+# 
+# heatmap_errors_multi(att)
+```
+
+
+
+
+
 
 
 
