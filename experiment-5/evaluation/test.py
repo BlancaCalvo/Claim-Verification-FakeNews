@@ -84,7 +84,7 @@ device = "cuda:0"
 model.to(device)
 
 for seed in seeds:
-    base_dir = 'experiment-5/outputs/sembert-concat_%s-agg_%s-%dbatch_size-%dseq_length-%dn_aspect-%s/' % (str(args.concat), str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect, str(args.mapping))
+    base_dir = 'experiment-5/outputs/f_sembert-concat_%s-agg_%s-%dbatch_size-%dseq_length-%dn_aspect-%s/' % (str(args.concat), str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect, str(args.mapping))
     #base_dir = 'experiment-5/outputs/bert_base/'
     if not os.path.exists(base_dir):
         print('%s results do not exist!' % base_dir)
