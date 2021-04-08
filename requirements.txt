@@ -4,3 +4,4 @@ torch==1.7.1
 transformers==4.0.1
 git+git://github.com/j6mes/drqa@parallel
 git+git://github.com/sheffieldnlp/fever-scorer@master
+git+https://github.com/allenai/allennlp@65ff0d87a30e6532cb21ea5fe8b7bd436445c128
