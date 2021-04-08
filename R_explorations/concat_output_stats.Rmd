@@ -124,7 +124,7 @@ heatmap_errors(bert_results)
 ## Results from sembert
 
 ```{r ce6}
-sembert_12_results<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_12/F-dev-results.tsv", header = FALSE, sep='\t')
+sembert_12_results<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_base/F-dev-results.tsv", header = FALSE, sep='\t')
 
 sembert_12_results <- sembert_12_results %>%
   #filter(V4!=2)%>%
