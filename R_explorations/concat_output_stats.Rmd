@@ -93,7 +93,7 @@ results %>%
   geom_tile()+ 
   geom_text(aes(label = round(count, 1))) +
   scale_fill_gradient(low = "white", high = "#4186BE") +
-  labs(x="Predited",y="Truth")+
+  labs(x="Predicted",y="Truth")+
   scale_x_discrete(labels = c("SUPPORTS", "REFUTES", "NEI"))+
   scale_y_discrete(labels = c("NEI","REFUTES", "SUPPORTS"), limits = rev)
 
@@ -105,7 +105,7 @@ results %>%
 ## Results from base_bert
 
 ```{r ce5}
-bert_results<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/bert_base/N_dev_results.tsv", header = FALSE, sep='\t')
+bert_results<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/bert_base/F-dev-results.tsv", header = FALSE, sep='\t')
 
 bert_results <- bert_results %>%
   #filter(V4!=2)%>%
@@ -124,7 +124,7 @@ heatmap_errors(bert_results)
 ## Results from sembert
 
 ```{r ce6}
-sembert_12_results<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_12/dev-results.tsv", header = FALSE, sep='\t')
+sembert_12_results<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_12/F-dev-results.tsv", header = FALSE, sep='\t')
 
 sembert_12_results <- sembert_12_results %>%
   #filter(V4!=2)%>%
@@ -151,37 +151,11 @@ d <- table_results(bert_small, sembert_12_results)
 
 ```
 
-## Results from sembert with Attention layer between propositions (sembert_att)
-
-```{r ce8}
-aggregation<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/aggregation/dev-results.tsv", header = FALSE, sep='\t')
-
-aggregation_results <- aggregation %>%
-  #filter(V4!=2)%>%
-  rowwise() %>%
-  mutate(output= which.max(list(V1,V2,V3))-1)%>%
-  mutate(right = sum(V4==output, na.rm=T))
-
-print(sum(aggregation_results$right)/nrow(aggregation_results))
-
-heatmap_errors(aggregation_results)
-
-```
-
-### Comparison base_bert and sembert_att
-
-```{r ce9}
-
-d<-table_results(bert_results, aggregation_results)
-
-#table_results(sembert_small, aggregation_results)
-
-```
 
 ## Results from sembert with the DREAM mapping (sembert_dream)
 
 ```{r ce10}
-dream_mapping <- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/mapping/dream-dev-results.tsv", header = FALSE, sep='\t')
+dream_mapping <- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/mapping/F-dream-dev-results.tsv", header = FALSE, sep='\t')
 
 dream_mapping_results <- dream_mapping %>%
   #filter(V4!=2)%>%
@@ -207,7 +181,7 @@ d<-table_results(bert_results, dream_mapping_results)
 ## Results sembert with more tags (sembert_tags1)
 
 ```{r ce12}
-tag_mapping<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/mapping/tags1-dev-results.tsv", header = FALSE, sep='\t')
+tag_mapping<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/mapping/F-tags1-dev-results.tsv", header = FALSE, sep='\t')
 
 tag_mapping_results <- tag_mapping %>%
   #filter(V4!=2)%>%
@@ -232,25 +206,10 @@ differing<-table_results(bert_results, tag_mapping_results)
 
 ```
 
-```{r ce15, include=FALSE, eval=FALSE}
-f_bert_results<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/bert_base/F-dev-results.tsv", header = FALSE, sep='\t')
-
-f_bert_results <- f_bert_results %>%
-  #filter(V4!=2)%>%
-  rowwise() %>%
-  mutate(output= which.max(list(V1,V2,V3))-1)%>%
-  mutate(right = sum(V4==output, na.rm=T))
-
-print(sum(f_bert_results$right)/nrow(f_bert_results))
-
-f_bert_results <- cbind(f_bert_results, V5 = dev$V1) 
-
-```
-
 ## Results sembert with tags1+attention
 
 ```{r ce16}
-att_tag<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/agg_tags1/dev-results.tsv", header = FALSE, sep='\t')
+att_tag<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/agg_tags1/f-dev-results.tsv", header = FALSE, sep='\t')
 
 att_tag_results <- att_tag %>%
   #filter(V4!=2)%>%
@@ -362,7 +321,7 @@ results %>%
   geom_tile()+ 
   geom_text(aes(label = round(count, 1))) +
   scale_fill_gradient(low = "white", high = "#4186BE") +
-  labs(x="Predited",y="Truth")+
+  labs(x="Predicted",y="Truth")+
   scale_x_discrete(labels = c("SUPPORTS", "REFUTES", "NEI"))+
   scale_y_discrete(labels = c("REFUTES", "SUPPORTS"), limits = rev)
 
@@ -371,20 +330,23 @@ results %>%
 multi <- bert_results%>%
   filter(V5 %in% y)
 
+print('bert_base')
 print(sum(multi$right)/nrow(multi))
 
 heatmap_errors_multi(multi)
 
-multi_sem <- sembert_12_results%>%
-  filter(V5 %in% y)
+#multi_sem <- sembert_12_results%>%
+#  filter(V5 %in% y)
 
-print(sum(multi_sem$right)/nrow(multi_sem))
 
-heatmap_errors_multi(multi_sem)
+#print(sum(multi_sem$right)/nrow(multi_sem))
+
+#heatmap_errors_multi(multi_sem)
 
 multi_sem_tags1 <- tag_mapping_results%>%
   filter(V5 %in% y)
 
+print('sembert_tags1')
 print(sum(multi_sem_tags1$right)/nrow(multi_sem_tags1))
 
 heatmap_errors_multi(multi_sem_tags1)
@@ -396,19 +358,21 @@ heatmap_errors_multi(multi_sem_tags1)
 # 
 # heatmap_errors_multi(agg)
 # 
-# dream <- dream_mapping_results%>%
+
+print('sembert_dream')
+dream <- dream_mapping_results%>%
+   filter(V5 %in% y)
+ 
+print(sum(dream$right)/nrow(dream))
+ 
+heatmap_errors_multi(dream)
+# 
+#att <- att_tag_results%>%
 #   filter(V5 %in% y)
 # 
-# print(sum(dream$right)/nrow(dream))
+#print(sum(att$right)/nrow(att))
 # 
-# heatmap_errors_multi(dream)
-# 
-# att <- att_tag_results%>%
-#   filter(V5 %in% y)
-# 
-# print(sum(att$right)/nrow(att))
-# 
-# heatmap_errors_multi(att)
+#heatmap_errors_multi(att)
 ```
 
 
