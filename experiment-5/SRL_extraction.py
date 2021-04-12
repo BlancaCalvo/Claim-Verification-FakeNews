@@ -53,7 +53,7 @@ def read_examples_SRL(input_file, predictor):
 
 
             for evidence in evidences:
-                evidence = re.sub(r'\.[a-zA-Z \-é0-9\(\)]*$', '', evidence) # instead of this line I should change the build_gear_input_set.py script
+                #evidence = re.sub(r'\.[a-zA-Z \-é0-9\(\)]*$', '', evidence) # instead of this line I should change the build_gear_input_set.py script
                 try:
                     prediction = predictor.predict_json({'sentence': evidence})
                 except RuntimeError:
@@ -105,7 +105,7 @@ def read_examples_SRL_1claim(input_file, predictor):
             unique_id += 1
 
             for evidence in evidences:
-                evidence = re.sub(r'\.[a-zA-Z \-é0-9\(\)]*$', '', evidence) # instead of this line I should change the build_gear_input_set.py script
+                #evidence = re.sub(r'\.[a-zA-Z \-é0-9\(\)]*$', '', evidence) # instead of this line I should change the build_gear_input_set.py script
                 try:
                     prediction = predictor.predict_json({'sentence': evidence})
                 except RuntimeError:

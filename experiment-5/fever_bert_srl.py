@@ -289,6 +289,7 @@ if __name__ == "__main__":
 
             # Calculate the accuracy for this batch of instances.
             tmp_eval_accuracy = flat_accuracy(logits, label_ids)
+            print(eval_accuracy, tmp_eval_accuracy)
             eval_accuracy += tmp_eval_accuracy
             nb_eval_steps += 1
             if eval_accuracy > best_result:
