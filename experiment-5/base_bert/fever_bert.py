@@ -1,4 +1,4 @@
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, AdamW, get_linear_schedule_with_warmup
+from transformers import BertTokenizer, BertForSequenceClassification, AdamW, get_linear_schedule_with_warmup
 import numpy as np
 from extractor import InputExample, convert_examples_to_features
 import torch
@@ -54,13 +54,13 @@ dev_dataset = read_examples('data/gear/gear-dev-set-0_001.tsv')
 #train_dataset = read_examples('data/gear/train_trial.tsv')
 #dev_dataset = read_examples('data/gear/trial.tsv')
 
-tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
+tokenizer = BertTokenizer.from_pretrained(model_checkpoint, use_fast=True)
 
 train_encoded_dataset = convert_examples_to_features(examples=train_dataset, seq_length=250, tokenizer=tokenizer)
 dev_encoded_dataset = convert_examples_to_features(examples=dev_dataset, seq_length=250, tokenizer=tokenizer)
 
 num_labels = 3
-model = AutoModelForSequenceClassification.from_pretrained(model_checkpoint, num_labels=num_labels)
+model = BertForSequenceClassification.from_pretrained(model_checkpoint, num_labels=num_labels)
 
 def flat_accuracy(preds, labels): # from https://medium.com/@aniruddha.choudhury94/part-2-bert-fine-tuning-tutorial-with-pytorch-for-text-classification-on-the-corpus-of-linguistic-18057ce330e1
     pred_flat = np.argmax(preds, axis=1).flatten()
@@ -96,7 +96,7 @@ scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_t
 model.to(device)
 best_epoch = 0
 best_result = 0.0
-dir_path = 'experiment-5/outputs/F-base-bert/'
+dir_path = 'experiment-5/outputs/F-base-bert-2/'
 if not os.path.exists(dir_path):
     os.mkdir(dir_path)
 

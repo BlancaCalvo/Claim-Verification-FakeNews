@@ -40,7 +40,7 @@ CUDA_VISIBLE_DEVICES=1 python experiment-5/SRL_extraction.py --input_file data/g
 ### BERT base model
 
 ```
-CUDA_VISIBLE_DEVICES=0 python experiment-5/base_bert/fever_bert.py &> bert_train.log &
+CUDA_VISIBLE_DEVICES=2 python experiment-5/base_bert/fever_bert.py &> bert_train.log &
 
 python experiment-5/base_bert/test.py
 ```

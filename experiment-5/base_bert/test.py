@@ -1,6 +1,6 @@
 
 import argparse
-from transformers import BertTokenizer, AutoModelForSequenceClassification, AdamW, get_linear_schedule_with_warmup, AutoTokenizer
+from transformers import BertTokenizer, BertForSequenceClassification, AdamW, get_linear_schedule_with_warmup
 import numpy as np
 from extractor import InputExample, convert_examples_to_features
 import torch
@@ -61,12 +61,12 @@ dev_dataset = read_examples('data/gear/N_gear-dev-set-0_001.tsv')
 
 model_checkpoint = "bert-base-uncased"
 #tokenizer = BertTokenizer.from_pretrained(model_checkpoint, do_lower_case=True)
-tokenizer = AutoTokenizer.from_pretrained(model_checkpoint, use_fast=True)
+tokenizer = BertTokenizer.from_pretrained(model_checkpoint, use_fast=True)
 
 #logger.info('Convert examples to features (VALIDATION).')
 dev_encoded_dataset = convert_examples_to_features(examples=dev_dataset, seq_length=250, tokenizer=tokenizer)
 num_labels = 3
-model = AutoModelForSequenceClassification.from_pretrained(model_checkpoint, num_labels=num_labels)
+model = BertForSequenceClassification.from_pretrained(model_checkpoint, num_labels=num_labels)
 
 def flat_accuracy(preds, labels): # from https://medium.com/@aniruddha.choudhury94/part-2-bert-fine-tuning-tutorial-with-pytorch-for-text-classification-on-the-corpus-of-linguistic-18057ce330e1
     pred_flat = np.argmax(preds, axis=1).flatten()
@@ -106,8 +106,7 @@ best_result = 0.0
 seeds = [314]
 
 for seed in seeds:
-    #base_dir = 'experiment-5/outputs/sembert-vote_%s-concat_%s-agg_%s-%dbatch_size-%dseq_length/' % (str(args.vote), str(args.concat), str(args.aggregate), args.batch_size, args.seq_length)
-    base_dir = 'experiment-5/outputs/F-base-bert/'
+    base_dir = 'experiment-5/outputs/F-base-bert-2/'
 
     # FOR SOME REASON KEYS OF THE DICT CONTAIN MODULE., CHECK WHY
     checkpoint = torch.load(base_dir + 'best.pth.tar')
