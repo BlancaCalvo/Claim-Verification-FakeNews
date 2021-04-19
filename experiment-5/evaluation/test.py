@@ -19,7 +19,7 @@ parser = argparse.ArgumentParser()
 #
 parser.add_argument("--dev_features", default='data/srl_features/dev_srl_all.json', type=str, required=False)
 
-parser.add_argument("--concat", action='store_true', help="Set this flag if you want to concat evidences.")
+#parser.add_argument("--concat", action='store_true', help="Set this flag if you want to concat evidences.")
 parser.add_argument("--aggregate", action='store_true', help="Set this flag if you want to aggregate the evidences.") #does not work yet
 parser.add_argument("--no_srl", action='store_true', help="Set this flag if the given dataset does not have srl.")
 parser.add_argument("--max_num_aspect", default=3, type=int, required=False)
@@ -84,7 +84,7 @@ device = "cuda:0"
 model.to(device)
 
 for seed in seeds:
-    base_dir = 'experiment-5/outputs/f_sembert-concat_%s-agg_%s-%dbatch_size-%dseq_length-%dn_aspect-%s/' % (str(args.concat), str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect, str(args.mapping))
+    base_dir = 'experiment-5/outputs/oie_sembert-concat_True-agg_%s-%dbatch_size-%dseq_length-%dn_aspect-%s/' % (str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect, str(args.mapping))
     #base_dir = 'experiment-5/outputs/bert_base/'
     if not os.path.exists(base_dir):
         print('%s results do not exist!' % base_dir)

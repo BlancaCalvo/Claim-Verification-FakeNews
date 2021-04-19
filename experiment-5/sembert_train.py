@@ -1,5 +1,4 @@
 import os
-#os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 import numpy as np
 import random
@@ -11,7 +10,7 @@ import json
 import itertools
 import operator
 
-from allennlp.predictors import Predictor
+#from allennlp.predictors import Predictor
 
 import torch
 import torch.nn as nn
@@ -65,9 +64,7 @@ def map_srl(srl, type=None):
             if type=='tags1':
                 srl['verbs'][i]['tags'] = list(map(tags1.get, srl['verbs'][i]['tags']))
             elif type == 'dream':
-                #print(srl['verbs'][i]['tags'])
                 srl['verbs'][i]['tags'] = list(map(tags_dream.get, srl['verbs'][i]['tags']))
-                #print(srl['verbs'][i]['tags'])
             elif type=='binary':
                 srl['verbs'][i]['tags'] = list(map(binary.get, srl['verbs'][i]['tags']))
         return srl
@@ -84,14 +81,12 @@ def read_srl_examples_concat(input, mapping=None):
     with open(input, "r") as read_file:
         data = json.load(read_file)
     examples = []
-    #index = [f['index'] for f in data]
     res = {'index':''} #'unique_id': None, 'claim_srl':None,'evidence_srl':None,'label':None,
     first = 1
     for dic in data:
         #print(dic['claim_srl'])
         dic['claim_srl'] = map_srl(dic['claim_srl'], mapping)
         dic['evidence_srl'] = map_srl(dic['evidence_srl'], mapping)
-        #print(dic['claim_srl'])
         if dic['index'] == res['index']:
             res['evidence_srl']['verbs'] += (dic['evidence_srl']['verbs'])
             res['evidence_srl']['words'] += (dic['evidence_srl']['words'])
@@ -103,7 +98,6 @@ def read_srl_examples_concat(input, mapping=None):
             examples.append(InputExample(guid=res['index'], text_a=res['claim_srl'], text_b=res['evidence_srl'],label=res['label'], index=res['index']))
             res = dic
     examples.append(InputExample(guid=res['index'], text_a=res['claim_srl'], text_b=res['evidence_srl'], label=res['label'], index=res['index']))
-    #logger.info(res['claim_srl'], mapping)) crec que la claim no s'està convertint en el mapping, comprovar!!!
     return examples
 
 def flat_accuracy(preds, labels): # from https://medium.com/@aniruddha.choudhury94/part-2-bert-fine-tuning-tutorial-with-pytorch-for-text-classification-on-the-corpus-of-linguistic-18057ce330e1
@@ -124,19 +118,19 @@ def top_vote(l):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--train_srl_file", default=None, type=str, required=False)
-    parser.add_argument("--dev_srl_file", default=None, type=str, required=False)
+    parser.add_argument("--train_file", default=None, type=str, required=False)
+    parser.add_argument("--dev_file", default=None, type=str, required=False)
     parser.add_argument("--batch_size", default=16, type=int, required=False)
     parser.add_argument("--seq_length", default=300, type=int, required=False)
     parser.add_argument("--cuda_devices", default='0', type=str, required=False)
     parser.add_argument("--max_num_aspect", default=3, type=int, required=False)
     parser.add_argument("--mapping", default=None, type=str, required=False)
-    #parser.add_argument("--concat", action='store_true', help="Set this flag if you want to concat evidences.")
+    #parser.add_argument("--concat", action='store_true', help="Set this flag if you want to concat evidences.") # that's the default, no need for tag
     parser.add_argument("--aggregate", action='store_true', help="Set this flag if you want to aggregate the evidences.") #does not work yet
     parser.add_argument("--vote", action='store_true', help="Set this flag if you want to make voting system with evidences.")
     args = parser.parse_args()
 
-    dir_path = 'experiment-5/outputs/oie_sembert-concat_%s-agg_%s-%dbatch_size-%dseq_length-%dn_aspect-%s/' % (str(args.concat), str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect, str(args.mapping))
+    dir_path = 'experiment-5/outputs/oie_sembert-concat_True-agg_%s-%dbatch_size-%dseq_length-%dn_aspect-%s/' % (str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect, str(args.mapping))
     logger.info(dir_path)
     if not os.path.exists(dir_path):
         os.mkdir(dir_path)
@@ -177,7 +171,6 @@ if __name__ == "__main__":
     logger.info('Tag vocabulary size: %d' % (vocab_size))
     logger.info(tag_tokenizer.ids_to_tags)
     tag_config = TagConfig(tag_vocab_size=vocab_size, hidden_size=10, layer_num=1, output_dim=10, dropout_prob=0.1, num_aspect=args.max_num_aspect)
-    #logger.info("Model config {}".format(tag_config)) #does not print
 
     if args.aggregate:
         model = BertForSequenceClassificationTagWithAgg.from_pretrained(model_checkpoint, num_labels=num_labels, tag_config=tag_config)
@@ -297,7 +290,7 @@ if __name__ == "__main__":
                 else:
                     logits = model(input_ids, segment_ids, input_mask, start_end_idx, input_tag_ids, None)
 
-                    # GET THE LOGITS & LABELS
+            # GET THE LOGITS & LABELS
             logits = logits.detach().cpu().numpy()
             label_ids = label_ids.to('cpu').numpy()
 

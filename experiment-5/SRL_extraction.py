@@ -1,7 +1,5 @@
-import itertools
+
 import logging
-import re
-from extractor import InputExample
 import argparse
 from allennlp.predictors import Predictor
 import json
@@ -40,7 +38,7 @@ if __name__ == "__main__":
             claim_prediction = predictor.predict_json({'sentence': claim})
 
             for evidence in evidences:
-                #evidence = re.sub(r'\.[a-zA-Z \-é0-9\(\)]*$', '', evidence)  # instead of this line I should change the build_gear_input_set.py script
+                #evidence = re.sub(r'\.[a-zA-Z \-é0-9\(\)]*$', '', evidence)  # this removed NE in a previous version
                 try:
                     prediction = predictor.predict_json({'sentence': evidence})
                 except RuntimeError:
