@@ -28,7 +28,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_file", default='data/gear/gear-train-set-0_001.tsv', type=str, required=True)
     parser.add_argument("--output_file", default='data/graph_features/oie_features.json', type=str, required=True)
-    #parser.add_argument("--cuda", default=-1, type=int, required=False) # set to 0
+    parser.add_argument("--cuda", default=-1, type=int, required=False) # set to 0
     args = parser.parse_args()
     print(args.input_file)
     print(args.output_file)
@@ -52,7 +52,6 @@ if __name__ == "__main__":
             claim_prediction = predictor.predict_json({'sentence': claim})
 
             for evidence in evidences:
-                #evidence = re.sub(r'\.[a-zA-Z \-é0-9\(\)]*$', '', evidence)  # instead of this line I should change the build_gear_input_set.py script
                 try:
                     prediction = predictor.predict_json({'sentence': evidence})
                 except RuntimeError:

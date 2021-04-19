@@ -50,6 +50,17 @@ def map_srl(srl, type=None):
                   'B-ARGM-CAU': 'argument', 'I-ARGM-CAU': 'argument', 'B-ARGM-PRP': 'argument',  'B-R-ARG0':'argument', 'I-R-ARG0':'argument',
                   'I-ARGM-PRP': 'argument', 'O': 'O',  'B-ARGM-MNR':'argument', 'I-ARGM-MNR':'argument', 'B-ARGM-ADV':'argument', 'I-ARGM-ADV': 'argument',
                     'B-ARGM-DIS':'argument', 'I-ARGM-DIS':'argument'}
+        binary = {'[PAD]': 'PAD', '[CLS]': '[CLS]', '[SEP]': '[SEP]', 'B-V': 'verb', 'I-V': 'verb',
+                      'B-ARG0': 'argument',
+                      'I-ARG0': 'argument', 'B-ARG1': 'argument', 'I-ARG1': 'argument', 'B-ARG2': 'argument',
+                      'I-ARG2': 'argument', 'B-ARG3': 'argument', 'I-ARG3': 'argument', 'B-ARG4': 'argument',
+                      'I-ARG4': 'argument', 'B-ARGM-TMP': 'argument', 'I-ARGM-TMP': 'argument',
+                      'B-ARGM-LOC': 'argument', 'I-ARGM-LOC': 'argument',
+                      'B-ARGM-CAU': 'argument', 'I-ARGM-CAU': 'argument', 'B-ARGM-PRP': 'argument',
+                      'B-R-ARG0': 'argument', 'I-R-ARG0': 'argument',
+                      'I-ARGM-PRP': 'argument', 'O': 'O', 'B-ARGM-MNR': 'argument', 'I-ARGM-MNR': 'argument',
+                      'B-ARGM-ADV': 'argument', 'I-ARGM-ADV': 'argument',
+                      'B-ARGM-DIS': 'argument', 'I-ARGM-DIS': 'argument'}
         for i,dic in enumerate(srl['verbs']):
             if type=='tags1':
                 srl['verbs'][i]['tags'] = list(map(tags1.get, srl['verbs'][i]['tags']))
@@ -57,6 +68,8 @@ def map_srl(srl, type=None):
                 #print(srl['verbs'][i]['tags'])
                 srl['verbs'][i]['tags'] = list(map(tags_dream.get, srl['verbs'][i]['tags']))
                 #print(srl['verbs'][i]['tags'])
+            elif type=='binary':
+                srl['verbs'][i]['tags'] = list(map(binary.get, srl['verbs'][i]['tags']))
         return srl
 
 def read_srl_examples(input):
@@ -118,12 +131,12 @@ if __name__ == "__main__":
     parser.add_argument("--cuda_devices", default='0', type=str, required=False)
     parser.add_argument("--max_num_aspect", default=3, type=int, required=False)
     parser.add_argument("--mapping", default=None, type=str, required=False)
-    parser.add_argument("--concat", action='store_true', help="Set this flag if you want to concat evidences.")
+    #parser.add_argument("--concat", action='store_true', help="Set this flag if you want to concat evidences.")
     parser.add_argument("--aggregate", action='store_true', help="Set this flag if you want to aggregate the evidences.") #does not work yet
     parser.add_argument("--vote", action='store_true', help="Set this flag if you want to make voting system with evidences.")
     args = parser.parse_args()
 
-    dir_path = 'experiment-5/outputs/f_sembert-concat_%s-agg_%s-%dbatch_size-%dseq_length-%dn_aspect-%s/' % (str(args.concat), str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect, str(args.mapping))
+    dir_path = 'experiment-5/outputs/oie_sembert-concat_%s-agg_%s-%dbatch_size-%dseq_length-%dn_aspect-%s/' % (str(args.concat), str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect, str(args.mapping))
     logger.info(dir_path)
     if not os.path.exists(dir_path):
         os.mkdir(dir_path)
@@ -132,12 +145,12 @@ if __name__ == "__main__":
 
     logger.info('Loading srl.')
 
-    if args.concat:
-        train_dataset = read_srl_examples_concat(args.train_srl_file, args.mapping)
-        dev_dataset = read_srl_examples_concat(args.dev_srl_file, args.mapping)
-    else:
+    if args.vote:
         train_dataset = read_srl_examples(args.train_srl_file)
         dev_dataset = read_srl_examples(args.dev_srl_file)
+    else:
+        train_dataset = read_srl_examples_concat(args.train_srl_file, args.mapping)
+        dev_dataset = read_srl_examples_concat(args.dev_srl_file, args.mapping)
 
     tokenizer = BertTokenizer.from_pretrained(model_checkpoint, do_lower_case=True)
 
@@ -154,6 +167,8 @@ if __name__ == "__main__":
         tag_tokenizer = TagTokenizer(vocab=['verb', 'argument', '[CLS]', '[SEP]', '[PAD]', 'location', 'temporal', 'O'])
     elif args.mapping == 'tags1':
         tag_tokenizer = TagTokenizer(vocab=['V', 'ARG1','ARG0','ARG2', 'ARG3','ARG4', '[CLS]', '[SEP]', '[PAD]', 'TMP', 'LOC', 'ARGM', 'O'])
+    elif args.mapping == 'binary':
+        tag_tokenizer = TagTokenizer(vocab=['verb', 'argument', '[CLS]', '[SEP]', '[PAD]', 'O'])
     else:
         tag_tokenizer = TagTokenizer()
 
