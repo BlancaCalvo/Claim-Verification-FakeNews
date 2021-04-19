@@ -1,7 +1,7 @@
 # from: https://github.com/cooelf/SemBERT
 import logging
 
-from tag_model.tagging import get_tags, SRLPredictor
+from tag_model.tagging import get_tags#, SRLPredictor
 from data_process.datasets import QueryTagSequence
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
