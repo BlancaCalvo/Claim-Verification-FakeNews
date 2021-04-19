@@ -1,14 +1,14 @@
-from allennlp.predictors import Predictor
+#from allennlp.predictors import Predictor
 import json
 
-class SRLPredictor(object):
-    def __init__(self,SRL_MODEL_PATH):
-        # use the model from allennlp for simlicity.
-        self.predictor = Predictor.from_path(SRL_MODEL_PATH)
-        self.predictor._model = self.predictor._model.cuda()  # this can only support GPU computation
+# class SRLPredictor(object):
+#     def __init__(self,SRL_MODEL_PATH):
+#         # use the model from allennlp for simlicity.
+#         self.predictor = Predictor.from_path(SRL_MODEL_PATH)
+#         self.predictor._model = self.predictor._model.cuda()  # this can only support GPU computation
 
-    def predict(self, sent):
-        return self.predictor.predict(sentence=sent)
+#     def predict(self, sent):
+#         return self.predictor.predict(sentence=sent)
 
 
 def get_tags(srl_predictor, tok_text, tag_vocab):
