@@ -32,7 +32,7 @@ python experiment-5/preprocess/build_gear_input_set.py
 ### BERT base model
 
 ```
-CUDA_VISIBLE_DEVICES=2 python experiment-5/base_bert/fever_bert.py &> bert_train.log &
+CUDA_VISIBLE_DEVICES=2 python experiment-5/base_bert/fever_bert.py 
 
 python experiment-5/base_bert/test.py
 ```
@@ -41,17 +41,33 @@ python experiment-5/base_bert/test.py
 ### SRL extraction
 
 ```
-CUDA_VISIBLE_DEVICES=0 python experiment-5/SRL_extraction.py --input_file data/gear/N_gear-train-set-0_001.tsv --output_file data/srl_features/train_srl_all.json --cuda 0 
+CUDA_VISIBLE_DEVICES=0 python experiment-5/SRL_extraction.py 
+    --input_file data/gear/N_gear-train-set-0_001.tsv 
+    --output_file data/srl_features/train_srl_all.json 
+    --cuda 0 
 
-CUDA_VISIBLE_DEVICES=1 python experiment-5/SRL_extraction.py --input_file data/gear/N_gear-dev-set-0_001.tsv --output_file data/srl_features/N_dev_srl_all.json --cuda 0
+CUDA_VISIBLE_DEVICES=1 python experiment-5/SRL_extraction.py 
+    --input_file data/gear/N_gear-dev-set-0_001.tsv 
+    --output_file data/srl_features/N_dev_srl_all.json 
+    --cuda 0
 ```
 
 ### Train and test Sembert with Semantic Role Labels
 
 ```
-python experiment-5/sembert_train.py --train_file data/srl_features/train_srl_all.json --dev_file data/srl_features/dev_srl_all.json --mapping tags1 --cuda_devices 0,1,2 --seq_length 250 
+python experiment-5/sembert_train.py 
+    --train_file data/srl_features/train_srl_all.json 
+    --dev_file data/srl_features/dev_srl_all.json 
+    --mapping tags1 
+    --cuda_devices 0,1,2 
+    --seq_length 250 
+    --batch_size 20
 
-PYTHONPATH=experiment-5 python experiment-5/evaluation/test.py --mapping tags1 --seq_length 250 --max_num_aspect 12 --batch_size 20
+PYTHONPATH=experiment-5 python experiment-5/evaluation/test.py 
+    --mapping tags1 
+    --seq_length 250 
+    --max_num_aspect 12 
+    --batch_size 20
 ```
 
 ### OpenIE extraction
@@ -59,15 +75,31 @@ PYTHONPATH=experiment-5 python experiment-5/evaluation/test.py --mapping tags1 -
 ```
 pip install -r oie_requirements.txt
 
-CUDA_VISIBLE_DEVICES=0 python experiment-5/OIE_extraction.py --input_file data/gear/N_gear-train-set-0_001.tsv --output_file data/oie_features/train_oie_all.json --cuda 0 
+CUDA_VISIBLE_DEVICES=0 python experiment-5/OIE_extraction.py 
+    --input_file data/gear/N_gear-train-set-0_001.tsv 
+    --output_file data/oie_features/train_oie_all.json 
+    --cuda 0 
 
-CUDA_VISIBLE_DEVICES=1 python experiment-5/OIE_extraction.py --input_file data/gear/N_gear-dev-set-0_001.tsv --output_file data/oie_features/N_dev_oie_all.json --cuda 0
+CUDA_VISIBLE_DEVICES=1 python experiment-5/OIE_extraction.py 
+    --input_file data/gear/N_gear-dev-set-0_001.tsv 
+    --output_file data/oie_features/N_dev_oie_all.json 
+    --cuda 0
 ```
 
 ### Train and test Sembert with OpenIE
 
 ```
-python experiment-5/sembert_train.py --train_file data/oie_features/train_oie_all.json --dev_file data/oie_features/dev_oie_all.json --mapping binary --cuda_devices 0,1,2 --seq_length 250 
+python experiment-5/sembert_train.py 
+    --train_file data/oie_features/train_oie_all.json 
+    --dev_file data/oie_features/dev_oie_all.json 
+    --mapping binary 
+    --cuda_devices 0,1,2 
+    --seq_length 250 
+    --batch_size 20
 
-PYTHONPATH=experiment-5 python experiment-5/evaluation/test.py --mapping binary --seq_length 250 --max_num_aspect 12 --batch_size 20
+PYTHONPATH=experiment-5 python experiment-5/evaluation/test.py 
+    --mapping binary 
+    --seq_length 250 
+    --max_num_aspect 12 
+    --batch_size 20
 ```
