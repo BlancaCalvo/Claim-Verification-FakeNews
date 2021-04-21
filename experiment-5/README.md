@@ -103,3 +103,13 @@ PYTHONPATH=experiment-5 python experiment-5/evaluation/test.py
     --max_num_aspect 12 
     --batch_size 20
 ```
+
+### FEVER score
+
+```
+python experiment-5/evaluation/results_scorer.py 
+    --predicted_labels experiment-5/outputs/f_sembert-concat_True-agg_False-20batch_size-250seq_length-12n_aspect-tags1/dev-results.tsv
+    --predicted_evidence data/gear/bert-nli-dev-retrieve-set.tsv 
+    --actual data/fever/shared_task_dev.jsonl
+
+```

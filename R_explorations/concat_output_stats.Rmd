@@ -300,7 +300,7 @@ x <- bind_rows(lines)
 ```
 
 ```{r ce19, include=FALSE, eval=TRUE}
-x <- scan("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/multi-hop-index.txt", what="", sep="\n")
+x <- scan("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/annotations/multi-hop-index.txt", what="", sep="\n")
 # Separate elements by one or more whitepace
 y <- strsplit(x, "[[:space:]]+")
 ```

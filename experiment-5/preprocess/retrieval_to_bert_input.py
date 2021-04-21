@@ -124,4 +124,4 @@ if __name__ == '__main__':
     build_bert_train_sr_set('data/fever/train.jsonl', 'data/gear/bert-nli-train-sr-set.tsv')
     process('data/retrieved/train.ensembles.s10.jsonl', 'data/gear/bert-nli-train-retrieve-set.tsv')
     process('data/retrieved/dev.ensembles.s10.jsonl', 'data/gear/bert-nli-dev-retrieve-set.tsv')
-    process('../data/retrieved/test.ensembles.s10.jsonl', '../data/bert/bert-nli-test-retrieve-set.tsv')
+    process('data/retrieved/test.ensembles.s10.jsonl', 'data/gear/bert-nli-test-retrieve-set.tsv')

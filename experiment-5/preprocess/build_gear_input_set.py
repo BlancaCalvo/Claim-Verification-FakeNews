@@ -156,9 +156,9 @@ if __name__ == '__main__':
     # build_with_threshold('../data/bert/bert-nli-dev-retrieve-set.tsv', '../data/gear/gear-dev-set-0_01.tsv', 0.01)
     # build_with_threshold('../data/bert/bert-nli-dev-retrieve-set.tsv', '../data/gear/gear-dev-set-0_0001.tsv', 0.0001)
 
-    #print('Start building gear test set...')
-    #build_with_threshold('../data/bert/bert-nli-test-retrieve-set.tsv',
-    #                     '../data/gear/gear-test-set-0_001.tsv', 0.001)
+    print('Start building gear test set...')
+    build_with_threshold('data/gear/bert-nli-test-retrieve-set.tsv',
+                        'data/gear/N_gear-test-set-0_001.tsv', 0.001)
     # build_with_threshold('../data/bert/bert-nli-test-retrieve-set.tsv', '../data/gear/gear-test-set-0_1.tsv', 0.1)
     # build_with_threshold('../data/bert/bert-nli-test-retrieve-set.tsv', '../data/gear/gear-test-set-0_01.tsv', 0.01)
     # build_with_threshold('../data/bert/bert-nli-test-retrieve-set.tsv', '../data/gear/gear-test-set-0_0001.tsv', 0.0001)

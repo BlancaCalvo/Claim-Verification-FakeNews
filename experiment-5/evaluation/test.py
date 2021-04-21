@@ -17,15 +17,17 @@ from allennlp.predictors import Predictor
 
 parser = argparse.ArgumentParser()
 #
-parser.add_argument("--dev_features", default='data/srl_features/dev_srl_all.json', type=str, required=False)
+parser.add_argument("--dataset", default='data/srl_features/N_dev_srl_all.json', type=str, required=False)
 
 #parser.add_argument("--concat", action='store_true', help="Set this flag if you want to concat evidences.")
 parser.add_argument("--aggregate", action='store_true', help="Set this flag if you want to aggregate the evidences.") #does not work yet
 parser.add_argument("--no_srl", action='store_true', help="Set this flag if the given dataset does not have srl.")
-parser.add_argument("--max_num_aspect", default=3, type=int, required=False)
+parser.add_argument("--max_num_aspect", default=12, type=int, required=False)
 parser.add_argument("--mapping", default=None, type=str, required=False)
-parser.add_argument("--seq_length", default=300, type=int, required=False)
-parser.add_argument("--batch_size", default=16, type=int, required=False)
+parser.add_argument("--seq_length", default=250, type=int, required=False)
+parser.add_argument("--batch_size", default=20, type=int, required=False)
+parser.add_argument("--model_path", default=None, type=str, required=False)
+parser.add_argument("--test", action='store_true', help="Set this flag to test on the test detaset.")
 #parser.add_argument("--cuda_devices", default='-1', type=str, required=False)
 
 args = parser.parse_args()
@@ -34,8 +36,9 @@ if args.no_srl:
     print('Here import examples and srl predictor')
     #dev_dataset = read_examples() look at original sembert training script!
     srl_predictor = Predictor.from_path("https://storage.googleapis.com/allennlp-public-models/bert-base-srl-2020.11.19.tar.gz")
+    dataset = None # here I should process the data if no SRL
 else:
-    dev_dataset = read_srl_examples_concat(args.dev_features, args.mapping)
+    dataset = read_srl_examples_concat(args.dataset, args.mapping)
     srl_predictor = None
 
 
@@ -44,7 +47,7 @@ model_checkpoint = "bert-base-uncased"
 tokenizer = BertTokenizer.from_pretrained(model_checkpoint, do_lower_case=True)
 
 #logger.info('Convert examples to features (VALIDATION).')
-dev_encoded_dataset = convert_examples_to_features(dev_dataset, max_seq_length=args.seq_length, tokenizer=tokenizer, srl_predictor=srl_predictor)
+encoded_dataset = convert_examples_to_features(dataset, max_seq_length=args.seq_length, tokenizer=tokenizer, srl_predictor=srl_predictor)
 
 if args.mapping == 'dream':
     tag_tokenizer = TagTokenizer(vocab=['verb', 'argument', '[CLS]', '[SEP]', '[PAD]', 'location', 'temporal', 'O'])
@@ -56,7 +59,7 @@ else:
 
 # dataloader
 batch_size = args.batch_size
-eval_features = transform_tag_features(args.max_num_aspect, dev_encoded_dataset, tag_tokenizer, max_seq_length=args.seq_length)
+eval_features = transform_tag_features(args.max_num_aspect, encoded_dataset, tag_tokenizer, max_seq_length=args.seq_length)
 all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
 all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
 all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
@@ -84,8 +87,10 @@ device = "cuda:0"
 model.to(device)
 
 for seed in seeds:
-    base_dir = 'experiment-5/outputs/oie_sembert-concat_True-agg_%s-%dbatch_size-%dseq_length-%dn_aspect-%s/' % (str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect, str(args.mapping))
-    #base_dir = 'experiment-5/outputs/bert_base/'
+    if args.model_path:
+        base_dir = args.model_path
+    else:
+        base_dir = 'experiment-5/outputs/sembert-concat_True-agg_%s-%dbatch_size-%dseq_length-%dn_aspect-%s/' % (str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect, str(args.mapping))
     if not os.path.exists(base_dir):
         print('%s results do not exist!' % base_dir)
         continue
@@ -106,7 +111,10 @@ for seed in seeds:
     model.load_state_dict(new_checkpoint['model'])
     model.eval()
 
-    fout = open(base_dir + 'dev-results.tsv', 'w')
+    if args.test:
+        fout = open(base_dir + 'test-results.tsv', 'w')
+    else:
+        fout = open(base_dir + 'dev-results.tsv', 'w')
     #dev_tqdm_iterator = tqdm(dev_dataloader)
     with torch.no_grad():
         for batch in dev_dataloader:
