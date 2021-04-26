@@ -89,13 +89,7 @@ CUDA_VISIBLE_DEVICES=1 python experiment-5/OIE_extraction.py
 ### Train and test Sembert with OpenIE
 
 ```
-python experiment-5/sembert_train.py 
-    --train_file data/oie_features/train_oie_all.json 
-    --dev_file data/oie_features/dev_oie_all.json 
-    --mapping binary 
-    --cuda_devices 0,1,2 
-    --seq_length 250 
-    --batch_size 20
+python experiment-5/sembert_train.py --train_file data/oie_features/train_oie_all.json --dev_file data/oie_features/dev_oie_all.json --mapping binary --cuda_devices 0,1,2 --seq_length 250 --batch_size 20 --max_num_aspect 12
 
 PYTHONPATH=experiment-5 python experiment-5/evaluation/test.py 
     --mapping binary 

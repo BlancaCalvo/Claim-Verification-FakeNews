@@ -130,7 +130,7 @@ if __name__ == "__main__":
     parser.add_argument("--vote", action='store_true', help="Set this flag if you want to make voting system with evidences.")
     args = parser.parse_args()
 
-    dir_path = 'experiment-5/outputs/oie_sembert-concat_True-agg_%s-%dbatch_size-%dseq_length-%dn_aspect-%s/' % (str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect, str(args.mapping))
+    dir_path = 'experiment-5/outputs/f_sembert-concat_True-agg_%s-%dbatch_size-%dseq_length-%dn_aspect-%s/' % (str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect, str(args.mapping))
     logger.info(dir_path)
     if not os.path.exists(dir_path):
         os.mkdir(dir_path)
@@ -140,11 +140,11 @@ if __name__ == "__main__":
     logger.info('Loading srl.')
 
     if args.vote:
-        train_dataset = read_srl_examples(args.train_srl_file)
-        dev_dataset = read_srl_examples(args.dev_srl_file)
+        train_dataset = read_srl_examples(args.train_file)
+        dev_dataset = read_srl_examples(args.dev_file)
     else:
-        train_dataset = read_srl_examples_concat(args.train_srl_file, args.mapping)
-        dev_dataset = read_srl_examples_concat(args.dev_srl_file, args.mapping)
+        train_dataset = read_srl_examples_concat(args.train_file, args.mapping)
+        dev_dataset = read_srl_examples_concat(args.dev_file, args.mapping)
 
     tokenizer = BertTokenizer.from_pretrained(model_checkpoint, do_lower_case=True)
 

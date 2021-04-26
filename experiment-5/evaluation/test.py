@@ -54,6 +54,8 @@ if args.mapping == 'dream':
 elif args.mapping == 'tags1':
     tag_tokenizer = TagTokenizer(
         vocab=['V', 'ARG1', 'ARG0', 'ARG2', 'ARG3', 'ARG4', '[CLS]', '[SEP]', '[PAD]', 'TMP', 'LOC', 'ARGM', 'O'])
+elif args.mapping == 'binary':
+    tag_tokenizer = TagTokenizer(vocab=['verb', 'argument', '[CLS]', '[SEP]', '[PAD]', 'O'])
 else:
     tag_tokenizer = TagTokenizer()
 
@@ -97,7 +99,7 @@ for seed in seeds:
 
 
     # FOR SOME REASON KEYS OF THE DICT CONTAIN MODULE., CHECK WHY
-    checkpoint = torch.load(base_dir + 'best.pth.tar')
+    checkpoint = torch.load(base_dir + 'epoch.3.pth.tar')
     #print(type(checkpoint['model'])) # should be dict
     new_checkpoint = checkpoint
     checkpoint_new_names = {}

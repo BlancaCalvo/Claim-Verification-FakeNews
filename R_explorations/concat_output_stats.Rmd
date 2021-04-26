@@ -206,6 +206,33 @@ differing<-table_results(bert_results, tag_mapping_results)
 
 ```
 
+## Results sembert with OpenIE
+
+```{r ce12}
+oie<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/oie/dev-results.tsv", header = FALSE, sep='\t')
+
+oie_results <- oie %>%
+  #filter(V4!=2)%>%
+  rowwise() %>%
+  mutate(output= which.max(list(V1,V2,V3))-1)%>%
+  mutate(right = sum(V4==output, na.rm=T))
+
+print(sum(oie_results$right)/nrow(oie_results))
+
+heatmap_errors(oie_results)
+
+```
+
+### Comparison base_bert and sembert_tags1
+
+```{r ce14}
+
+differing<-table_results(bert_results, oie_results)
+
+
+```
+
+
 ## Results sembert with tags1+attention
 
 ```{r ce16}
