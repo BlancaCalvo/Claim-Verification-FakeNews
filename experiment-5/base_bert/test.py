@@ -40,7 +40,7 @@ def read_examples(input_file):
 
 parser = argparse.ArgumentParser()
 #
-parser.add_argument("--dev_features", default='data/gear/gear-dev-set-0_001.tsv', type=str, required=False)
+parser.add_argument("--dev_features", default='data/gear/N_gear-dev-set-0_001.tsv', type=str, required=False)
 
 #parser.add_argument("--concat", action='store_true', help="Set this flag if you want to concat evidences.")
 #parser.add_argument("--aggregate", action='store_true', help="Set this flag if you want to aggregate the evidences.") #does not work yet
@@ -57,7 +57,7 @@ random.seed(seed)
 np.random.seed(seed)
 torch.manual_seed(seed)
 
-dev_dataset = read_examples('data/gear/N_gear-dev-set-0_001.tsv')
+dev_dataset = read_examples(args.dev_features)
 
 model_checkpoint = "bert-base-uncased"
 #tokenizer = BertTokenizer.from_pretrained(model_checkpoint, do_lower_case=True)

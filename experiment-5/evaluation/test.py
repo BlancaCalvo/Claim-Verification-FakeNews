@@ -98,8 +98,7 @@ for seed in seeds:
         continue
 
 
-    # FOR SOME REASON KEYS OF THE DICT CONTAIN MODULE., CHECK WHY
-    checkpoint = torch.load(base_dir + 'epoch.3.pth.tar')
+    checkpoint = torch.load(base_dir + 'best.pth.tar')
     #print(type(checkpoint['model'])) # should be dict
     new_checkpoint = checkpoint
     checkpoint_new_names = {}
@@ -126,9 +125,8 @@ for seed in seeds:
             if args.aggregate:
                 logits = model(input_ids, index_ids, segment_ids, input_mask, start_end_idx, input_tag_ids, None)
             else:
-                logits = model(input_ids, segment_ids, input_mask, start_end_idx, input_tag_ids, None) # RuntimeError: Input, output and indices must be on the current device
+                logits = model(input_ids, segment_ids, input_mask, start_end_idx, input_tag_ids, None)
 
-            #print(logits.shape)
 
             for i in range(logits.shape[0]):
                 #fout.write('\t'.join(['%.4lf' % num for num in logits[i]]) + '\r\n')

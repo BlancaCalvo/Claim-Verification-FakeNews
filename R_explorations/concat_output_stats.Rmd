@@ -209,7 +209,7 @@ differing<-table_results(bert_results, tag_mapping_results)
 ## Results sembert with OpenIE
 
 ```{r ce12}
-oie<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/oie/dev-results.tsv", header = FALSE, sep='\t')
+oie<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/oie/dev-results-tags.tsv", header = FALSE, sep='\t')
 
 oie_results <- oie %>%
   #filter(V4!=2)%>%

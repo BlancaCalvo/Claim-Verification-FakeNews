@@ -37,7 +37,7 @@ if __name__ == "__main__":
             evidences = line[3:]
             claim_prediction = predictor.predict_json({'sentence': claim})
 
-            for evidence in evidences:
+            for evidence in evidences: # the limitation is for gold dataset: [0:2]
                 #evidence = re.sub(r'\.[a-zA-Z \-é0-9\(\)]*$', '', evidence)  # this removed NE in a previous version
                 try:
                     prediction = predictor.predict_json({'sentence': evidence})

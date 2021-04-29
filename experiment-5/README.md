@@ -46,10 +46,7 @@ CUDA_VISIBLE_DEVICES=0 python experiment-5/SRL_extraction.py
     --output_file data/srl_features/train_srl_all.json 
     --cuda 0 
 
-CUDA_VISIBLE_DEVICES=1 python experiment-5/SRL_extraction.py 
-    --input_file data/gear/N_gear-dev-set-0_001.tsv 
-    --output_file data/srl_features/N_dev_srl_all.json 
-    --cuda 0
+CUDA_VISIBLE_DEVICES=0 python experiment-5/SRL_extraction.py --input_file data/gear/gold_gear-dev-set-0_001.tsv --output_file data/srl_features/gold_dev_srl_all.json --cuda 0
 ```
 
 ### Train and test Sembert with Semantic Role Labels
@@ -105,5 +102,12 @@ python experiment-5/evaluation/results_scorer.py
     --predicted_labels experiment-5/outputs/f_sembert-concat_True-agg_False-20batch_size-250seq_length-12n_aspect-tags1/dev-results.tsv
     --predicted_evidence data/gear/bert-nli-dev-retrieve-set.tsv 
     --actual data/fever/shared_task_dev.jsonl
+
+```
+
+### Saliency Scores
+
+```
+PYTHONPATH=experiment-5/saliency/ python experiment-5/saliency/saliency_gen/interpret_grads_occ.py --models_dir experiment-5/outputs/F-base-bert-2 --dataset_dir data/gear/trial.tsv --output_dir data/saliency/F-base-bert/ --saliency guided sal inputx --model trans --dataset fever --no_time
 
 ```
