@@ -1,0 +1,105 @@
+---
+title: "saliency"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = 'C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/')
+knitr::opts_chunk$set(echo = FALSE, message = FALSE)
+library(dplyr)
+library(ggplot2)
+library(compare)
+library(rjson)
+library(data.table)
+library(jsonlite)
+library(tidyverse)
+library(forcats)
+
+#setwd("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/")
+# REMEMBER: the working directory of the R sessions and the working directory of the notebook are different things!!!!
+
+```
+
+```{r load_data}
+
+
+
+lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/saliency/F-base-bert/F-base-bert-2_1_guided_mean")
+lines <- lapply(lines, fromJSON)
+lines <- lapply(lines, unlist)
+x <- bind_rows(lines)
+
+```
+
+```{r select_data}
+
+example1 <- x[3,] # SUPPORTS
+
+token_names <- example1%>%
+  select(starts_with("tokens.token"))%>%
+  t()%>%
+  as.data.frame()
+
+token_values <- example1%>%
+  select(starts_with("tokens.0"))%>%
+  t()%>%
+  as.data.frame()
+
+token_values['ID'] <- token_names[,1]
+token_values$ID = as.factor(token_values$ID)
+token_values$V1 = as.numeric(token_values$V1)
+
+token_values["stat"] <- as.factor(replicate(nrow(token_values), "saliency"))
+token_values['order'] <- c(1:nrow(token_values))
+
+token_values <- token_values%>%
+  filter(ID != '[PAD]')
+
+```
+
+
+```{r plot}
+token_values%>%
+  mutate(ID = fct_reorder(ID,order)) %>%
+  ggplot(aes(x=ID, y=stat, fill=V1)) + geom_tile()+
+  scale_fill_gradient(low = "white", high = "#4186BE") +
+  theme(axis.text.x = element_text(angle = 90))
+
+ggsave(file="image.png", width=20, height=4, dpi=300)
+
+```
+
+```{r salient_tokens}
+
+
+
+````
+
+
+
+
+
+```{r select_data}
+
+example2 <- x[5,] # REFUTES
+
+token_names2 <- example2%>%
+  select(starts_with("tokens.token"))
+
+token_values2 <- example2%>%
+  select(starts_with("tokens.1"))
+
+colnames(token_values2) <- token_names2[1,]
+
+```
+
+
+
+
+
+
+
+
+
+
