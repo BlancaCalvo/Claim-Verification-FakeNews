@@ -49,10 +49,12 @@ def read_examples(input_file):
 
 model_checkpoint = "bert-base-uncased"
 
-train_dataset = read_examples('data/gear/gear-train-set-0_001.tsv')
-dev_dataset = read_examples('data/gear/gear-dev-set-0_001.tsv')
+#train_dataset = read_examples('data/gear/gear-train-set-0_001.tsv')
+#dev_dataset = read_examples('data/gear/gear-dev-set-0_001.tsv')
 #train_dataset = read_examples('data/gear/train_trial.tsv')
 #dev_dataset = read_examples('data/gear/trial.tsv')
+train_dataset = read_examples('data/gear/gold_gear-train-set-0_001.tsv')
+dev_dataset = read_examples('data/gear/gold_gear-dev-set-0_001.tsv')
 
 tokenizer = BertTokenizer.from_pretrained(model_checkpoint, use_fast=True)
 
@@ -96,7 +98,7 @@ scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_t
 model.to(device)
 best_epoch = 0
 best_result = 0.0
-dir_path = 'experiment-5/outputs/F-base-bert-2/'
+dir_path = 'experiment-5/outputs/gold-base-bert/'
 if not os.path.exists(dir_path):
     os.mkdir(dir_path)
 

@@ -106,7 +106,7 @@ best_result = 0.0
 seeds = [314]
 
 for seed in seeds:
-    base_dir = 'experiment-5/outputs/F-base-bert-2/'
+    base_dir = 'experiment-5/outputs/gold-base-bert/'
 
     # FOR SOME REASON KEYS OF THE DICT CONTAIN MODULE., CHECK WHY
     checkpoint = torch.load(base_dir + 'best.pth.tar')

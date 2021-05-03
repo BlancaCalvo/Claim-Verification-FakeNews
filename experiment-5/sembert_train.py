@@ -130,7 +130,7 @@ if __name__ == "__main__":
     parser.add_argument("--vote", action='store_true', help="Set this flag if you want to make voting system with evidences.")
     args = parser.parse_args()
 
-    dir_path = 'experiment-5/outputs/f_sembert-concat_True-agg_%s-%dbatch_size-%dseq_length-%dn_aspect-%s/' % (str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect, str(args.mapping))
+    dir_path = 'experiment-5/outputs/gold_sembert-concat_True-agg_%s-%dbatch_size-%dseq_length-%dn_aspect-%s/' % (str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect, str(args.mapping))
     logger.info(dir_path)
     if not os.path.exists(dir_path):
         os.mkdir(dir_path)

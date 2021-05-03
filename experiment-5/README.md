@@ -32,7 +32,7 @@ python experiment-5/preprocess/build_gear_input_set.py
 ### BERT base model
 
 ```
-CUDA_VISIBLE_DEVICES=2 python experiment-5/base_bert/fever_bert.py 
+CUDA_VISIBLE_DEVICES=0 python experiment-5/base_bert/fever_bert.py 
 
 python experiment-5/base_bert/test.py
 ```
