@@ -6,6 +6,6 @@ OUTDATED - Experiment 2: it's the addaptation of the GEAR system (https://github
 
 OUTDATED - Experiment 4: I am experimenting with Semantic Roles information to deal with claim complexity and multi-hop (inspired on the DREAM system). Additionally, to inspect the differences between synthetic and naturally-occuring claims, I annotated subsets of FEVER, MultiFC and Hover. I annotated: claim complexity, time reasoning, time complexity and maths reasoning. Results can be seen in visuals/.
 
-ACTUAL THESIS -> Experiment 5: following the work in experiment 4, I trained a model for the FEVER dataset using a BERT model that includes Semantic Role Labels and another that include OpenIE tuples. The original model is SemBERT (https://github.com/cooelf/SemBERT). I am currently working on the explainability of my models. 
+ACTUAL THESIS -> Experiment 5: following the work in experiment 4, I trained a model for the FEVER dataset using a BERT model that includes Semantic Role Labels and another that includes OpenIE tuples. The original model is SemBERT (https://github.com/cooelf/SemBERT). I am currently working on the explainability of my models using scripts from https://github.com/copenlu/xai-benchmark. 
 
 See README of each of the experiments in the folders.
