@@ -105,6 +105,7 @@ for seed in seeds:
     for i in checkpoint['model'].keys():
         checkpoint_new_names[i] = i[7:]
     new_checkpoint['model'] = dict((checkpoint_new_names[key], value) for (key, value) in checkpoint['model'].items())
+    #print(new_checkpoint['model'].keys())
     #print(new_checkpoint['model']['dense.weight'].shape)
     #print(new_checkpoint['model']['dense.bias'].shape)
 

@@ -34,7 +34,7 @@ python experiment-5/preprocess/build_gear_input_set.py
 ```
 CUDA_VISIBLE_DEVICES=0 python experiment-5/base_bert/fever_bert.py 
 
-python experiment-5/base_bert/test.py
+CUDA_VISIBLE_DEVICES=0 python experiment-5/base_bert/test.py
 ```
 
 
@@ -105,9 +105,16 @@ python experiment-5/evaluation/results_scorer.py
 
 ```
 
-### Saliency Scores
+### Saliency Scores BERT model
 
 ```
 PYTHONPATH=experiment-5/saliency/ python experiment-5/saliency/saliency_gen/interpret_grads_occ.py --models_dir experiment-5/outputs/F-base-bert-2 --dataset_dir data/gear/trial.tsv --output_dir data/saliency/F-base-bert/ --saliency guided sal inputx --model trans --dataset fever --no_time
+
+```
+
+### Saliency Scores SemBERT model
+
+```
+PYTHONPATH=experiment-5/ python experiment-5/saliency/sembert_interpret_grads.py --dev_file data/srl_features/trial.json --saliency guided sal inputx
 
 ```

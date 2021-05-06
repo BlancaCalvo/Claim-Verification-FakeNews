@@ -690,7 +690,7 @@ class BertModel(BertPreTrainedModel):
         # Since we are adding it to the raw scores before the softmax, this is
         # effectively the same as removing these entirely.
         #extended_attention_mask = extended_attention_mask.to(dtype=next(self.parameters()).dtype) # fp16 compatibility, I deleted this line because it calls for parameters()
-        extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0 #not sure if I should comment this too
+        #extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0 #not sure if I should comment this too
 
         embedding_output = self.embeddings(input_ids, token_type_ids)
         encoded_layers = self.encoder(embedding_output,
@@ -954,14 +954,15 @@ class BertForSequenceClassificationTag(BertPreTrainedModel):
             self.classifier = nn.Linear(hidden_size, num_labels)
         self.apply(self.init_bert_weights)
 
-    def forward(self, input_ids, token_type_ids=None, attention_mask=None, start_end_idx=None, input_tag_ids=None, labels=None):
+    def forward(self, input_ids, input_tag_ids, token_type_ids=None, attention_mask=None, start_end_idx=None, labels=None, no_cuda=False, gradients_mode=False,seq_len=None): #I CHANGED THE ORDER OF THE ARGUMENTS
         sequence_output, _ = self.bert(input_ids, token_type_ids, attention_mask, output_all_encoded_layers=False)
-        no_cuda = False
+        #no_cuda = True # THIS WAS FALSE WHEN TRAINING, CHANGED TO TRUE FOR GRADIENTS COMPUTATION
         batch_size, sub_seq_len, dim = sequence_output.size()
         # sequence_output = sequence_output.unsqueeze(1)
-        start_end_idx = start_end_idx  # batch * seq_len * (start, end)
+        #start_end_idx = start_end_idx  # batch * seq_len * (start, end)
         max_seq_len = -1
         max_word_len = self.filter_size
+        #max_word_len = seq_len
         for se_idx in start_end_idx:
             num_words = 0
             for item in se_idx:
@@ -973,6 +974,10 @@ class BertForSequenceClassificationTag(BertPreTrainedModel):
             if num_words > max_seq_len:
                 max_seq_len = num_words
         assert max_word_len >= self.filter_size
+
+        if gradients_mode:
+            max_seq_len = seq_len
+
         batch_start_end_ids = []
         batch_id = 0
         for batch in start_end_idx:
@@ -1004,19 +1009,20 @@ class BertForSequenceClassificationTag(BertPreTrainedModel):
 
         use_tag = True
         if use_tag:
-            num_aspect = input_tag_ids.size(1)
-            input_tag_ids = input_tag_ids[:,:,:max_seq_len]
-            flat_input_tag_ids = input_tag_ids.view(-1, input_tag_ids.size(-1))
-            # print("flat_que_tag", flat_input_que_tag_ids.size())
-            tag_output = self.tag_model(flat_input_tag_ids, num_aspect)
-            # batch_size, que_len, num_aspect*tag_hidden_size
-            tag_output = tag_output.transpose(1, 2).contiguous().view(batch_size,
-                                                                      max_seq_len, -1)
-            #print(self.dense)
+            if not gradients_mode:
+                num_aspect = input_tag_ids.size(1)
+                input_tag_ids = input_tag_ids[:, :, :max_seq_len]
+                flat_input_tag_ids = input_tag_ids.view(-1, input_tag_ids.size(-1))
+                # print("flat_que_tag", flat_input_que_tag_ids.size())
+                tag_output = self.tag_model(flat_input_tag_ids, num_aspect)
+                tag_output = tag_output.transpose(1, 2).contiguous().view(batch_size, max_seq_len, -1)
+            else:
+                tag_output = input_tag_ids
+                #print(tag_output.shape)
+                tag_output = tag_output.transpose(1, 2).contiguous().view(batch_size, max_seq_len, -1)
+
             tag_output = self.dense(tag_output)
             sequence_output = torch.cat((bert_output, tag_output), 2)
-            # print("tag", tag_output.size())
-            # print("bert", bert_output.size())
 
         else:
             sequence_output = bert_output
@@ -1027,7 +1033,7 @@ class BertForSequenceClassificationTag(BertPreTrainedModel):
         pooled_output = self.dropout(pooled_output)
         logits = self.classifier(pooled_output)
 
-        if labels is not None:
+        if labels is not None and not gradients_mode:
             loss_fct = CrossEntropyLoss()
             loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
             return loss

@@ -252,6 +252,46 @@ heatmap_errors(att_tag_results)
 ```
 
 
+## Results with gold evidence
+
+### BERT
+
+```{r ce6}
+gold_b<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/gold/bert-results.tsv", header = FALSE, sep='\t')
+
+gold_b_results <- gold_b %>%
+  #filter(V4!=2)%>%
+  rowwise() %>%
+  mutate(output= which.max(list(V1,V2,V3))-1)%>%
+  mutate(right = sum(V4==output, na.rm=T))
+
+print(sum(gold_b_results$right)/nrow(gold_b_results))
+
+#table(sembert_12_results[, c("output", "V4")])
+
+heatmap_errors(gold_b_results)
+
+```
+
+### Sembert
+
+```{r ce6}
+gold<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/gold/dev-results.tsv", header = FALSE, sep='\t')
+
+gold_results <- gold %>%
+  #filter(V4!=2)%>%
+  rowwise() %>%
+  mutate(output= which.max(list(V1,V2,V3))-1)%>%
+  mutate(right = sum(V4==output, na.rm=T))
+
+print(sum(gold_results$right)/nrow(gold_results))
+
+#table(sembert_12_results[, c("output", "V4")])
+
+heatmap_errors(gold_results)
+
+```
+
 
 ```{r ce1, include=FALSE, eval=FALSE}
 json_data <- fromJSON(paste(readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/dev_srl_all.json"), collapse=""))

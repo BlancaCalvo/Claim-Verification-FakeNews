@@ -256,7 +256,7 @@ if __name__ == "__main__":
             if args.aggregate:
                 loss = model(input_ids, index_ids, segment_ids, input_mask, start_end_idx, input_tag_ids, label_ids)
             else:
-                loss = model(input_ids, segment_ids, input_mask, start_end_idx, input_tag_ids, label_ids)
+                loss = model(input_ids, input_tag_ids, segment_ids, input_mask, start_end_idx, label_ids)
 
             if len(cuda_devices) > 1:
                 loss = loss.mean()
