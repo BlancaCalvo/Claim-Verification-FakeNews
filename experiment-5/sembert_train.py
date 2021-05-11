@@ -130,7 +130,7 @@ if __name__ == "__main__":
     parser.add_argument("--vote", action='store_true', help="Set this flag if you want to make voting system with evidences.")
     args = parser.parse_args()
 
-    dir_path = 'experiment-5/outputs/gold_sembert-concat_True-agg_%s-%dbatch_size-%dseq_length-%dn_aspect-%s/' % (str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect, str(args.mapping))
+    dir_path = 'experiment-5/outputs/f_sembert-concat_True-agg_%s-%dbatch_size-%dseq_length-%dn_aspect-%s/' % (str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect, str(args.mapping))
     logger.info(dir_path)
     if not os.path.exists(dir_path):
         os.mkdir(dir_path)
@@ -288,7 +288,7 @@ if __name__ == "__main__":
                 if args.aggregate:
                     logits = model(input_ids, index_ids, segment_ids, input_mask, start_end_idx, input_tag_ids, None)
                 else:
-                    logits = model(input_ids, segment_ids, input_mask, start_end_idx, input_tag_ids, None)
+                    logits = model(input_ids, input_tag_ids, segment_ids, input_mask, start_end_idx, None)
 
             # GET THE LOGITS & LABELS
             logits = logits.detach().cpu().numpy()

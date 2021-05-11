@@ -92,7 +92,7 @@ for seed in seeds:
     if args.model_path:
         base_dir = args.model_path
     else:
-        base_dir = 'experiment-5/outputs/sembert-concat_True-agg_%s-%dbatch_size-%dseq_length-%dn_aspect-%s/' % (str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect, str(args.mapping))
+        base_dir = 'experiment-5/outputs/f_sembert-concat_True-agg_%s-%dbatch_size-%dseq_length-%dn_aspect-%s/' % (str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect, str(args.mapping))
     if not os.path.exists(base_dir):
         print('%s results do not exist!' % base_dir)
         continue
@@ -124,9 +124,9 @@ for seed in seeds:
             input_ids, input_mask, segment_ids, start_end_idx, input_tag_ids, label_ids, index_ids = batch
 
             if args.aggregate:
-                logits = model(input_ids, index_ids, segment_ids, input_mask, start_end_idx, input_tag_ids, None)
+                logits = model(input_ids,  input_tag_ids, index_ids, segment_ids, input_mask, start_end_idx, None)
             else:
-                logits = model(input_ids, segment_ids, input_mask, start_end_idx, input_tag_ids, None)
+                logits = model(input_ids, input_tag_ids, segment_ids, input_mask, start_end_idx, None)
 
 
             for i in range(logits.shape[0]):

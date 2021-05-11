@@ -263,6 +263,7 @@ gold_b_results <- gold_b %>%
   #filter(V4!=2)%>%
   rowwise() %>%
   mutate(output= which.max(list(V1,V2,V3))-1)%>%
+  #filter(output!=2)%>%
   mutate(right = sum(V4==output, na.rm=T))
 
 print(sum(gold_b_results$right)/nrow(gold_b_results))
@@ -282,6 +283,7 @@ gold_results <- gold %>%
   #filter(V4!=2)%>%
   rowwise() %>%
   mutate(output= which.max(list(V1,V2,V3))-1)%>%
+  #filter(output!=2)%>%
   mutate(right = sum(V4==output, na.rm=T))
 
 print(sum(gold_results$right)/nrow(gold_results))

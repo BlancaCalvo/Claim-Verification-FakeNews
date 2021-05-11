@@ -38,9 +38,9 @@ metric3 <- bind_rows(lines)
 list_metrics <- list(metric1,metric2,metric3)
 list_metric_names <- c('saliency','guided','inputx')
 
-example1_1 <- metric1[3,] # SUPPORTS
-example1_2 <- metric2[3,] # SUPPORTS
-example1_3 <- metric3[3,] # SUPPORTS
+#example1_1 <- metric1[3,] # SUPPORTS
+#example1_2 <- metric2[3,] # SUPPORTS
+#example1_3 <- metric3[3,] # SUPPORTS
 ```
 
 ```{r select_data}
@@ -56,40 +56,42 @@ normalized<-function(y) {
   return(y)
   }
 
-get_format_sal <- function (list_metrics,id, list_metric_names){
-final_list = data.frame(V1=integer(),
-                 ID=factor(), 
-                 stat=character(), 
-                 order=factor()) 
-for(i in 1:length(list_metrics)) {
-example <- list_metrics[[i]][id,]
-#get_format_sal <- function (example){
-token_names <- example%>%
-  select(starts_with("tokens.token"))%>%
-  t()%>%
-  as.data.frame()
+get_format_sal <- function(list_metrics,id, list_metric_names){
+  final_list <- data.frame(V1=integer(), ID=factor(), stat=character(), order=factor()) 
+  for(i in 1:length(list_metrics)) {
+    example <- list_metrics[[i]][id,]
 
-token_values <- example%>%
-  select(starts_with("tokens.0"))%>%
-  t()%>%
-  as.data.frame()
+    token_names <- example%>%
+      select(starts_with("tokens.token"))%>%
+      t()%>%
+      as.data.frame()
 
-token_values['ID'] <- token_names[,1]
-token_values$ID = as.factor(token_values$ID)
-token_values$V1 = as.numeric(token_values$V1)
-#token_values$V1 = apply(token_values[,1],2,normalized)
 
-token_values["stat"] <- as.factor(replicate(nrow(token_values), list_metric_names[i]))
-token_values['order'] <- c(1:nrow(token_values))
-token_values['order'] <- as.factor(token_values$order)
+    token_values <- example%>%
+      select(starts_with("tokens.0"))%>%
+      t()%>%
+      as.data.frame()
 
-token_values <- token_values%>%
-  filter(ID != '[PAD]')
 
-final_list <- rbind(final_list, token_values)
-}
+  token_values['ID'] <- token_names[,1]
+  token_values$ID = as.factor(token_values$ID)
+  token_values$V1 = as.numeric(token_values$V1)
+  #token_values$V1 = apply(token_values[,1],2,normalized)
 
-return(final_list)
+  token_values["stat"] <- as.factor(replicate(nrow(token_values), list_metric_names[i]))
+  token_values['order'] <- c(1:nrow(token_values))
+  token_values['order'] <- as.factor(token_values$order)
+
+  token_values <- token_values%>%
+    filter(ID != '[PAD]')
+
+  final_list <- rbind(final_list, token_values)
+  }
+  
+
+
+  return(final_list)
+  
 }
 ```
 
@@ -106,6 +108,7 @@ metrics_list%>%
   theme(axis.text.x = element_text(angle = 70, size = 7))+
   scale_x_discrete(labels=metrics_list[["ID"]][1:299])+
   #xlim(0, length(unique(metrics_list$ID)))
+  labs(x="Token",y="Metric")
   
 
 ggsave(file="image1.png", width=30, height=4, dpi=400)
@@ -125,17 +128,58 @@ metrics_list%>%
   theme(axis.text.x = element_text(angle = 70, size = 7))+
   scale_x_discrete(labels=metrics_list[["ID"]][1:299])+
   #xlim(0, length(unique(metrics_list$ID)))
+  labs(x="Token",y="Metric")
   
 
 ggsave(file="image2.png", width=30, height=4, dpi=400)
 
 ```
 
+## Sembert
 
 
+```{r load_data_s}
+lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/saliency/sembert/sembert/scores_sal_l2_1")
+lines <- lapply(lines, fromJSON)
+lines <- lapply(lines, unlist)
+metric11 <- bind_rows(lines)
+lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/saliency/sembert/sembert/scores_guided_l2_1")
+lines <- lapply(lines, fromJSON)
+lines <- lapply(lines, unlist)
+metric21 <- bind_rows(lines)
+lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/saliency/sembert/sembert/scores_inputx_l2_1")
+lines <- lapply(lines, fromJSON)
+lines <- lapply(lines, unlist)
+metric31 <- bind_rows(lines)
+
+list_metrics <- list(metric11,metric21,metric31)
+list_metric_names <- c('saliency_l2','guided_l2','inputx_l2')
+
+#example1_1 <- metric1[3,] # SUPPORTS
+#example1_2 <- metric2[3,] # SUPPORTS
+#example1_3 <- metric3[3,] # SUPPORTS
+```
 
 
+```{r plot_support_s}
+metrics_list<- get_format_sal(list_metrics, 3, list_metric_names)
 
+#token_values <- get_format_sal(example1_1)
+
+metrics_list%>%
+  #mutate(ID = fct_reorder(ID,order)) %>%
+  #filter(ID!='NA')%>%
+  ggplot(aes(x=order, y=stat, fill=V1)) + geom_tile()+
+  scale_fill_gradient(low = "white", high = "#4186BE") +
+  theme(axis.text.x = element_text(angle = 70, size = 7))+
+  scale_x_discrete(labels=metrics_list[["ID"]][1:299])+
+  #xlim(0, length(unique(metrics_list$ID)))
+  labs(x="Token",y="Metric")
+  
+
+ggsave(file="image1_s.png", width=30, height=4, dpi=400)
+
+```
 
 
 

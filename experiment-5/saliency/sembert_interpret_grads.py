@@ -183,18 +183,20 @@ def generate_saliency(model, model_path, test, data_loader, saliency_path, salie
     with open(saliency_path, 'w') as out:
         for instance_i, _ in enumerate(test):
             saliencies = []
+            prop_saliencies = []
             for token_i, token_id in enumerate(token_ids[instance_i]):
                 token_sal = {'token': tokenizer.ids_to_tokens[token_id]}
                 for cls_ in range(labels):
                     token_sal[int(cls_)] = class_attr_list[cls_][instance_i][token_i]
                 saliencies.append(token_sal)
-            for prop in range(13):
+            for prop in range(12):
                 prop_sal = {'prop': str(prop)}
                 for cls_ in range(labels):
+                    #print(len(class_attr_list_tags[cls_][instance_i][prop]))
                     prop_sal[int(cls_)] = class_attr_list_tags[cls_][instance_i][prop][0]
-                saliencies.append(prop_sal)
+                prop_saliencies.append(prop_sal)
 
-            out.write(json.dumps({'tokens': saliencies}) + '\n')
+            out.write(json.dumps({'tokens': saliencies, 'props':prop_saliencies}) + '\n')
             out.flush()
 
 
@@ -283,7 +285,10 @@ if __name__ == "__main__":
             print('Running aggregation ', aggregation, flush=True)
 
             #path_out = 'data/saliency/sembert'
-            for run in range(1, 2):
+            if not os.path.exists(args.path_out):
+                os.mkdir(args.path_out)
+
+            for run in range(1, 2): # when I have put a 6 here, the props are out of range. CHECK TOMORROW
                 generate_saliency(model, args.model_path, eval_data, validation_dataloader, os.path.join(args.path_out,f'scores_{saliency}_{aggregation}_{run}'), saliency, aggregation)
 
             print('Done')
