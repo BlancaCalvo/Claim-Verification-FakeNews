@@ -16,9 +16,8 @@ from allennlp.predictors import Predictor
 #from models import GEAR
 
 parser = argparse.ArgumentParser()
-#
-parser.add_argument("--dataset", default='data/srl_features/N_dev_srl_all.json', type=str, required=False)
 
+parser.add_argument("--dataset", default='data/srl_features/N_dev_srl_all.json', type=str, required=False)
 #parser.add_argument("--concat", action='store_true', help="Set this flag if you want to concat evidences.")
 parser.add_argument("--aggregate", action='store_true', help="Set this flag if you want to aggregate the evidences.") #does not work yet
 parser.add_argument("--no_srl", action='store_true', help="Set this flag if the given dataset does not have srl.")
@@ -27,14 +26,14 @@ parser.add_argument("--mapping", default=None, type=str, required=False)
 parser.add_argument("--seq_length", default=250, type=int, required=False)
 parser.add_argument("--batch_size", default=20, type=int, required=False)
 parser.add_argument("--model_path", default=None, type=str, required=False)
-parser.add_argument("--test", action='store_true', help="Set this flag to test on the test detaset.")
+parser.add_argument("--test", action='store_true', help="Set this flag to test on the test dataset.")
+parser.add_argument("--trial", action='store_true', help="Set this flag to test on a trial dataset.")
 #parser.add_argument("--cuda_devices", default='-1', type=str, required=False)
 
 args = parser.parse_args()
 
 if args.no_srl:
-    print('Here import examples and srl predictor')
-    #dev_dataset = read_examples() look at original sembert training script!
+    print('Import examples and srl predictor')
     srl_predictor = Predictor.from_path("https://storage.googleapis.com/allennlp-public-models/bert-base-srl-2020.11.19.tar.gz")
     dataset = None # here I should process the data if no SRL
 else:
@@ -115,6 +114,8 @@ for seed in seeds:
 
     if args.test:
         fout = open(base_dir + 'test-results.tsv', 'w')
+    elif args.trial:
+        fout = open(base_dir + 'trial-results.tsv', 'w')
     else:
         fout = open(base_dir + 'dev-results.tsv', 'w')
     #dev_tqdm_iterator = tqdm(dev_dataloader)
@@ -130,19 +131,5 @@ for seed in seeds:
 
 
             for i in range(logits.shape[0]):
-                #fout.write('\t'.join(['%.4lf' % num for num in logits[i]]) + '\r\n')
                 fout.write('{}\t{}\t{}\t{}\t{}\n'.format(logits[i][0], logits[i][1], logits[i][2], label_ids[i], index_ids[i]))
     fout.close()
-
-    # fout = open(base_dir + 'test-results.tsv', 'w')
-    # test_tqdm_iterator = tqdm(test_dataloader)
-    # with torch.no_grad():
-    #     for index, data in enumerate(test_tqdm_iterator):
-    #         feature_batch, claim_batch = data
-    #         feature_batch = feature_batch.cuda()
-    #         claim_batch = claim_batch.cuda()
-    #         outputs = model(feature_batch, claim_batch)
-    #
-    #         for i in range(outputs.shape[0]):
-    #             fout.write('\t'.join(['%.4lf' % num for num in outputs[i]]) + '\r\n')
-    # fout.close()

@@ -5,8 +5,6 @@ import logging
 import json
 from tqdm import tqdm
 
-#from allennlp.predictors import Predictor
-
 import torch
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 from transformers.models.bert.tokenization_bert import BertTokenizer
@@ -16,86 +14,21 @@ from tagged_features import InputExample, convert_examples_to_features, transfor
 from tag_model.tag_tokenization import TagTokenizer
 from tag_model.modeling import TagConfig
 from sembert.modeling import BertForSequenceClassificationTag, BertForSequenceClassificationTagWithAgg
+from sembert_train import read_srl_examples_concat
 
-#from saliency.data_loader import get_collate_fn, get_dataset
 from captum.attr import DeepLift, GuidedBackprop, InputXGradient, Occlusion, \
     Saliency, configure_interpretable_embedding_layer, \
     remove_interpretable_embedding_layer
 from collections import defaultdict
-
-
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def map_srl(srl, type=None):
-    if type == None:
-        return srl
-    else:
-        tags1 = {'[PAD]': 'PAD', '[CLS]': '[CLS]', '[SEP]': '[SEP]', 'B-V': 'V', 'I-V': 'V', 'B-ARG0': 'ARG0',
-                  'I-ARG0': 'ARG0', 'B-ARG1': 'ARG1', 'I-ARG1': 'ARG1', 'B-ARG2': 'ARG2', 'I-ARG2': 'ARG2', 'B-ARG3':'ARG3', 'I-ARG3':'ARG3', 'B-ARG4': 'ARG4',
-                  'I-ARG4': 'ARG4', 'B-ARGM-TMP': 'TMP', 'I-ARGM-TMP': 'TMP', 'B-ARGM-LOC': 'LOC', 'I-ARGM-LOC': 'LOC',
-                  'B-ARGM-CAU': 'ARGM', 'I-ARGM-CAU': 'ARGM', 'B-ARGM-PRP': 'ARGM',  'B-R-ARG0':'ARG0', 'I-R-ARG0':'ARG0',
-                  'I-ARGM-PRP': 'ARGM', 'O': 'O',  'B-ARGM-MNR':'ARGM', 'I-ARGM-MNR':'ARGM', 'B-ARGM-ADV':'ARGM', 'I-ARGM-ADV': 'ARGM',
-                    'B-ARGM-DIS':'ARGM', 'I-ARGM-DIS':'ARGM'}
-        tags_dream = {'[PAD]': 'PAD', '[CLS]': '[CLS]', '[SEP]': '[SEP]', 'B-V': 'verb', 'I-V': 'verb', 'B-ARG0': 'argument',
-                  'I-ARG0': 'argument', 'B-ARG1': 'argument', 'I-ARG1': 'argument', 'B-ARG2': 'argument', 'I-ARG2': 'argument', 'B-ARG3':'argument', 'I-ARG3':'argument', 'B-ARG4': 'argument',
-                  'I-ARG4': 'argument', 'B-ARGM-TMP': 'temporal', 'I-ARGM-TMP': 'temporal', 'B-ARGM-LOC': 'location', 'I-ARGM-LOC': 'location',
-                  'B-ARGM-CAU': 'argument', 'I-ARGM-CAU': 'argument', 'B-ARGM-PRP': 'argument',  'B-R-ARG0':'argument', 'I-R-ARG0':'argument',
-                  'I-ARGM-PRP': 'argument', 'O': 'O',  'B-ARGM-MNR':'argument', 'I-ARGM-MNR':'argument', 'B-ARGM-ADV':'argument', 'I-ARGM-ADV': 'argument',
-                    'B-ARGM-DIS':'argument', 'I-ARGM-DIS':'argument'}
-        binary = {'[PAD]': 'PAD', '[CLS]': '[CLS]', '[SEP]': '[SEP]', 'B-V': 'verb', 'I-V': 'verb',
-                      'B-ARG0': 'argument',
-                      'I-ARG0': 'argument', 'B-ARG1': 'argument', 'I-ARG1': 'argument', 'B-ARG2': 'argument',
-                      'I-ARG2': 'argument', 'B-ARG3': 'argument', 'I-ARG3': 'argument', 'B-ARG4': 'argument',
-                      'I-ARG4': 'argument', 'B-ARGM-TMP': 'argument', 'I-ARGM-TMP': 'argument',
-                      'B-ARGM-LOC': 'argument', 'I-ARGM-LOC': 'argument',
-                      'B-ARGM-CAU': 'argument', 'I-ARGM-CAU': 'argument', 'B-ARGM-PRP': 'argument',
-                      'B-R-ARG0': 'argument', 'I-R-ARG0': 'argument',
-                      'I-ARGM-PRP': 'argument', 'O': 'O', 'B-ARGM-MNR': 'argument', 'I-ARGM-MNR': 'argument',
-                      'B-ARGM-ADV': 'argument', 'I-ARGM-ADV': 'argument',
-                      'B-ARGM-DIS': 'argument', 'I-ARGM-DIS': 'argument'}
-        for i,dic in enumerate(srl['verbs']):
-            if type=='tags1':
-                srl['verbs'][i]['tags'] = list(map(tags1.get, srl['verbs'][i]['tags']))
-            elif type == 'dream':
-                srl['verbs'][i]['tags'] = list(map(tags_dream.get, srl['verbs'][i]['tags']))
-            elif type=='binary':
-                srl['verbs'][i]['tags'] = list(map(binary.get, srl['verbs'][i]['tags']))
-        return srl
-
-def read_srl_examples_concat(input, mapping=None):
-    with open(input, "r") as read_file:
-        data = json.load(read_file)
-    examples = []
-    res = {'index':''} #'unique_id': None, 'claim_srl':None,'evidence_srl':None,'label':None,
-    first = 1
-    for dic in data:
-        #print(dic['claim_srl'])
-        dic['claim_srl'] = map_srl(dic['claim_srl'], mapping)
-        dic['evidence_srl'] = map_srl(dic['evidence_srl'], mapping)
-        if dic['index'] == res['index']:
-            res['evidence_srl']['verbs'] += (dic['evidence_srl']['verbs'])
-            res['evidence_srl']['words'] += (dic['evidence_srl']['words'])
-        else:
-            if first == 1:
-                res = dic
-                first=0
-                continue
-            examples.append(InputExample(guid=res['index'], text_a=res['claim_srl'], text_b=res['evidence_srl'],label=res['label'], index=res['index']))
-            res = dic
-    examples.append(InputExample(guid=res['index'], text_a=res['claim_srl'], text_b=res['evidence_srl'], label=res['label'], index=res['index']))
-    return examples
-
 
 def get_model_embedding_emb(model):
     return model.bert.embeddings.embedding.word_embeddings
-    #if args.model == 'trans':
-    #    return model.bert.embeddings.embedding.word_embeddings
-    #else:
-    #    return model.embedding.embedding
 
 def summarize_attributions(attributions, type='mean', model=None, tokens=None):
     if type == 'none':
@@ -116,9 +49,6 @@ def generate_saliency(model, model_path, test, data_loader, saliency_path, salie
 
     labels = 3
 
-    #pad_to_max = False
-    #if saliency == 'deeplift':
-    #    ablator = DeepLift(model)
     if saliency == 'guided':
         ablator = GuidedBackprop(model)
     elif saliency == 'sal':
@@ -130,8 +60,6 @@ def generate_saliency(model, model_path, test, data_loader, saliency_path, salie
 
     test_dl = data_loader
 
-    #predictions_path = model_path + '/trial-results.tsv'
-
     if saliency != 'occlusion':
         #embedding_layer_name = 'model.bert.embeddings'
         interpretable_embedding = configure_interpretable_embedding_layer(model, 'bert.embeddings')
@@ -140,7 +68,6 @@ def generate_saliency(model, model_path, test, data_loader, saliency_path, salie
     class_attr_list = defaultdict(lambda: [])
     class_attr_list_tags = defaultdict(lambda: [])
     token_ids = []
-    #saliency_flops = []
 
     for batch in tqdm(test_dl, desc='Running Saliency Generation...'):
 
@@ -149,7 +76,7 @@ def generate_saliency(model, model_path, test, data_loader, saliency_path, salie
         # DATALOADER STRUCTURE:
         # batch[0] -> input_ids
         # batch[1] -> attention_mask
-        # batch[2] -> segment_ids -> i'm not super sure, but this might be token type
+        # batch[2] -> segment_ids
         # batch[3] -> start_end
         # batch[4] -> tag_ids
         # batch[5] -> labels
@@ -157,20 +84,27 @@ def generate_saliency(model, model_path, test, data_loader, saliency_path, salie
 
         token_ids += batch[0].detach().cpu().numpy().tolist()
 
+        # adds the embedding dimension to the input
         input_embeddings = interpretable_embedding.indices_to_embeddings(batch[0])
+        #print(input_embeddings.shape)
         tag_embeddings = interpretable_tag_embedding.indices_to_embeddings(batch[4])
+        #print(tag_embeddings.shape)
         inputs = (input_embeddings, tag_embeddings)
         additional = (batch[1], batch[2], batch[3], batch[5], True, True, 250)
 
         for cls_ in range(labels):
             attributions = ablator.attribute(inputs, target=cls_, additional_forward_args=additional)
             #print(len(attributions)) # ATTRIBUTIONS ARE NOW DOUBLE BECAUSE WE HAVE TWO SETS OF INPUTS
+            #print(attributions[1].shape) # same as input tag_ids with embedding dimension
+            #print(attributions[1][0][0][0]) # non-zero
+            #print(attributions[1][0][0][1]) # all zeros, as well as every other tag which is not the first one of the 250
 
+            # get just one value for input and index (flattens again the embedding dimension)
             attributions_tokens = summarize_attributions(attributions[0],type=aggregation, model=model, tokens=batch[0]).detach().cpu().numpy().tolist()
             attributions_tags = summarize_attributions(attributions[1], type=aggregation, model=model,tokens=batch[4]).detach().cpu().numpy().tolist()
 
-            #print(len(attributions_tokens[0])) # there is an attribution value for each token for each instance
-            #print(len(attributions_tags[0])) # there is an attribution value for each proposition???? Interesting... And unexpected
+            #print(attributions_tokens[0]) # there is an attribution value for each token for each instance
+            #print(attributions_tags[0]) # it returns a value for each tag, but for some reason, just the first value of the 250 is different than 0. WHY??
 
             class_attr_list[cls_] += [[_li for _li in _l] for _l in attributions_tokens]
             class_attr_list_tags[cls_] += [[_li for _li in _l] for _l in attributions_tags]
@@ -206,12 +140,12 @@ if __name__ == "__main__":
     parser.add_argument("--dev_file", default=None, type=str, required=False)
     parser.add_argument("--batch_size", default=20, type=int, required=False)
     parser.add_argument("--seq_length", default=250, type=int, required=False)
-    parser.add_argument("--cuda_devices", default='0', type=str, required=False)
+    #parser.add_argument("--cuda_devices", default='0', type=str, required=False)
     parser.add_argument("--max_num_aspect", default=12, type=int, required=False)
-    parser.add_argument("--mapping", default=None, type=str, required=False)
+    parser.add_argument("--mapping", default='tags1', type=str, required=False)
     parser.add_argument("--saliency", help="Saliency type", nargs='+')
-    parser.add_argument("--model_path", default='experiment-5/outputs/f_sembert-concat_True-agg_False-20batch_size-250seq_length-12n_aspect-None', type=str, required=False)
-    parser.add_argument("--path_out",default='data/saliency/sembert',type=str, required=False)
+    parser.add_argument("--model_path", default='experiment-5/outputs/f_sembert-concat_True-agg_False-20batch_size-250seq_length-12n_aspect-tags1/', type=str, required=False)
+    #parser.add_argument("--path_out",default='data/saliency/sembert',type=str, required=False)
     args = parser.parse_args()
 
     # LOAD DATA AND MODEL AND CREATE DATALOADER
@@ -281,14 +215,13 @@ if __name__ == "__main__":
         #    aggregations = ['none']
 
         for aggregation in aggregations:
-            #flops = []
             print('Running aggregation ', aggregation, flush=True)
 
-            #path_out = 'data/saliency/sembert'
-            if not os.path.exists(args.path_out):
-                os.mkdir(args.path_out)
+            path_out = args.model_path + 'saliency_scores/'
+            #if not os.path.exists(args.path_out):
+            #    os.mkdir(args.path_out)
 
-            for run in range(1, 2): # when I have put a 6 here, the props are out of range. CHECK TOMORROW
-                generate_saliency(model, args.model_path, eval_data, validation_dataloader, os.path.join(args.path_out,f'scores_{saliency}_{aggregation}_{run}'), saliency, aggregation)
+            #for run in range(1, 2):
+            generate_saliency(model, args.model_path, eval_data, validation_dataloader, os.path.join(path_out,f'scores_{saliency}_{aggregation}'), saliency, aggregation)
 
             print('Done')

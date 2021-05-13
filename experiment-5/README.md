@@ -54,7 +54,7 @@ CUDA_VISIBLE_DEVICES=0 python experiment-5/SRL_extraction.py --input_file data/g
 ```
 python experiment-5/sembert_train.py  --train_file data/srl_features/N_train_srl_all.json --dev_file data/srl_features/N_dev_srl_all.json --mapping tags1 --cuda_devices 0,1,2 --seq_length 250 --batch_size 20 --max_num_aspect 12 
 
-PYTHONPATH=experiment-5 python experiment-5/evaluation/test.py --mapping tags1 --seq_length 250 --max_num_aspect 12 --batch_size 20
+PYTHONPATH=experiment-5 python experiment-5/evaluation/test.py --mapping tags1 --seq_length 250 --max_num_aspect 12 --batch_size 20 --model_path PATH
 ```
 
 ### OpenIE extraction
@@ -105,6 +105,6 @@ PYTHONPATH=experiment-5/saliency/ python experiment-5/saliency/saliency_gen/inte
 ### Saliency Scores SemBERT model
 
 ```
-PYTHONPATH=experiment-5/ python experiment-5/saliency/sembert_interpret_grads.py --dev_file data/srl_features/trial.json --saliency guided sal inputx
+PYTHONPATH=experiment-5/ python experiment-5/saliency/sembert_interpret_grads.py --dev_file data/srl_features/trial.json --saliency guided sal inputx 
 
 ```

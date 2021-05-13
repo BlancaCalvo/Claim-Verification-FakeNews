@@ -105,7 +105,7 @@ results %>%
 ## Results from base_bert
 
 ```{r ce5}
-bert_results<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/bert_base/F-dev-results.tsv", header = FALSE, sep='\t')
+bert_results<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/bert_base/dev-results.tsv", header = FALSE, sep='\t')
 
 bert_results <- bert_results %>%
   #filter(V4!=2)%>%
@@ -119,12 +119,14 @@ bert_results <- cbind(bert_results, V5 = dev$V1) # I delete one row to match
 
 heatmap_errors(bert_results)
 
+ggsave(file="visuals/confusion_matrix/base_bert.png", width=6, height=4, dpi=400)
+
 ```
 
 ## Results from sembert
 
 ```{r ce6}
-sembert_12_results<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_base/F-dev-results.tsv", header = FALSE, sep='\t')
+sembert_12_results<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_all_tags/dev-results.tsv", header = FALSE, sep='\t')
 
 sembert_12_results <- sembert_12_results %>%
   #filter(V4!=2)%>%
@@ -137,6 +139,9 @@ print(sum(sembert_12_results$right)/nrow(sembert_12_results))
 #table(sembert_12_results[, c("output", "V4")])
 
 heatmap_errors(sembert_12_results)
+
+ggsave(file="visuals/confusion_matrix/sembert_all_tags.png", width=6, height=4, dpi=400)
+
 
 ```
 
@@ -155,7 +160,7 @@ d <- table_results(bert_small, sembert_12_results)
 ## Results from sembert with the DREAM mapping (sembert_dream)
 
 ```{r ce10}
-dream_mapping <- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/mapping/F-dream-dev-results.tsv", header = FALSE, sep='\t')
+dream_mapping <- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_dream/dev-results.tsv", header = FALSE, sep='\t')
 
 dream_mapping_results <- dream_mapping %>%
   #filter(V4!=2)%>%
@@ -166,6 +171,9 @@ dream_mapping_results <- dream_mapping %>%
 print(sum(dream_mapping_results$right)/nrow(dream_mapping_results))
 
 heatmap_errors(dream_mapping_results)
+
+ggsave(file="visuals/confusion_matrix/sembert_dream.png", width=6, height=4, dpi=400)
+
 
 ```
 
@@ -181,7 +189,7 @@ d<-table_results(bert_results, dream_mapping_results)
 ## Results sembert with more tags (sembert_tags1)
 
 ```{r ce12}
-tag_mapping<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/mapping/F-tags1-dev-results.tsv", header = FALSE, sep='\t')
+tag_mapping<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_tags1/dev-results.tsv", header = FALSE, sep='\t')
 
 tag_mapping_results <- tag_mapping %>%
   #filter(V4!=2)%>%
@@ -195,9 +203,12 @@ print(sum(tag_mapping_results$right)/nrow(tag_mapping_results))
 
 heatmap_errors(tag_mapping_results)
 
+ggsave(file="visuals/confusion_matrix/sembert_tags1.png", width=6, height=4, dpi=400)
+
+
 ```
 
-### Comparison base_bert and sembert_tags1
+### Comparison bert_base and sembert_tags1
 
 ```{r ce14}
 
@@ -209,7 +220,7 @@ differing<-table_results(bert_results, tag_mapping_results)
 ## Results sembert with OpenIE
 
 ```{r ce12}
-oie<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/oie/dev-results-tags.tsv", header = FALSE, sep='\t')
+oie<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_oie_tags1/dev-results.tsv", header = FALSE, sep='\t')
 
 oie_results <- oie %>%
   #filter(V4!=2)%>%
@@ -220,6 +231,9 @@ oie_results <- oie %>%
 print(sum(oie_results$right)/nrow(oie_results))
 
 heatmap_errors(oie_results)
+
+ggsave(file="visuals/confusion_matrix/sembert_oie_tags1.png", width=6, height=4, dpi=400)
+
 
 ```
 
@@ -236,7 +250,7 @@ differing<-table_results(bert_results, oie_results)
 ## Results sembert with tags1+attention
 
 ```{r ce16}
-att_tag<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/agg_tags1/f-dev-results.tsv", header = FALSE, sep='\t')
+att_tag<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_att_tags1/dev-results.tsv", header = FALSE, sep='\t')
 
 att_tag_results <- att_tag %>%
   #filter(V4!=2)%>%
@@ -249,6 +263,9 @@ print(sum(att_tag_results$right)/nrow(att_tag_results))
 #mat <- table(tag_mapping_results[, c("output", "V4")])
 
 heatmap_errors(att_tag_results)
+
+ggsave(file="visuals/confusion_matrix/sembert_att_tags1.png", width=6, height=4, dpi=400)
+
 ```
 
 
@@ -257,7 +274,7 @@ heatmap_errors(att_tag_results)
 ### BERT
 
 ```{r ce6}
-gold_b<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/gold/bert-results.tsv", header = FALSE, sep='\t')
+gold_b<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/gold_bert_base/dev-results.tsv", header = FALSE, sep='\t')
 
 gold_b_results <- gold_b %>%
   #filter(V4!=2)%>%
@@ -272,12 +289,15 @@ print(sum(gold_b_results$right)/nrow(gold_b_results))
 
 heatmap_errors(gold_b_results)
 
+ggsave(file="visuals/confusion_matrix/bert_gold.png", width=6, height=4, dpi=400)
+
+
 ```
 
 ### Sembert
 
 ```{r ce6}
-gold<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/gold/dev-results.tsv", header = FALSE, sep='\t')
+gold<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/gold_sembert_tags1/dev-results.tsv", header = FALSE, sep='\t')
 
 gold_results <- gold %>%
   #filter(V4!=2)%>%
@@ -291,6 +311,8 @@ print(sum(gold_results$right)/nrow(gold_results))
 #table(sembert_12_results[, c("output", "V4")])
 
 heatmap_errors(gold_results)
+
+ggsave(file="visuals/confusion_matrix/sembert_gold.png", width=6, height=4, dpi=400)
 
 ```
 
@@ -419,6 +441,9 @@ print('sembert_tags1')
 print(sum(multi_sem_tags1$right)/nrow(multi_sem_tags1))
 
 heatmap_errors_multi(multi_sem_tags1)
+
+ggsave(file="visuals/confusion_matrix/multi_hop_tags1.png", width=6, height=3, dpi=400)
+
 
 # agg <- aggregation_results%>%
 #   filter(V5 %in% y)
