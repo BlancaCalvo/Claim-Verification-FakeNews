@@ -54,6 +54,8 @@ CUDA_VISIBLE_DEVICES=0 python experiment-5/SRL_extraction.py --input_file data/g
 ```
 python experiment-5/sembert_train.py  --train_file data/srl_features/N_train_srl_all.json --dev_file data/srl_features/N_dev_srl_all.json --mapping tags1 --cuda_devices 0,1,2 --seq_length 250 --batch_size 20 --max_num_aspect 12 
 
+python experiment-5/sembert_train.py  --train_file data/srl_features/gold_train_srl_all.json --dev_file data/srl_features/gold_dev_srl_all.json --mapping tags1 --cuda_devices 1 --seq_length 50 --batch_size 20 --max_num_aspect 4
+
 PYTHONPATH=experiment-5 python experiment-5/evaluation/test.py --mapping tags1 --seq_length 250 --max_num_aspect 12 --batch_size 20 --model_path PATH
 ```
 
@@ -92,6 +94,10 @@ python experiment-5/evaluation/results_scorer.py
     --predicted_labels experiment-5/outputs/f_sembert-concat_True-agg_False-20batch_size-250seq_length-12n_aspect-tags1/dev-results.tsv
     --predicted_evidence data/gear/bert-nli-dev-retrieve-set.tsv 
     --actual data/fever/shared_task_dev.jsonl
+
+python experiment-5/evaluation/results_scorer.py --predicted_labels experiment-5/outputs/f_sembert-concat_True-agg_False-20batch_size-250seq_length-12n_aspect-tags1/test-results.tsv -
+-predicted_evidence data/gear/bert-nli-test-retrieve-set.tsv --shared_task data/fever/shared_task_dev.jsonl --test
+
 
 ```
 

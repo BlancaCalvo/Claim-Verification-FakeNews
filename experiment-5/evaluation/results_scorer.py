@@ -131,16 +131,19 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--predicted_labels", type=str)
     parser.add_argument("--predicted_evidence", type=str)
-    parser.add_argument("--actual", type=str)
+    parser.add_argument("--actual", type=str, required=False)
+    parser.add_argument("--shared_task", type=str, required=False)
+    parser.add_argument("--test", action='store_true', help="Produce test output.")
     args = parser.parse_args()
 
-    print('Dev score:')
-    dev_scorer(args.predicted_evidence, #bert-nli
+    if not args.test:
+        print('Dev score:')
+        dev_scorer(args.predicted_evidence, #bert-nli
                args.predicted_labels,
                args.actual, 0) #jsonl
-
-    #print('Collect test results:')
-    #test_collector('../data/bert/bert-nli-test-retrieve-set.tsv',
-    #               '../outputs/gear-5evi-1layer-att-314seed-001/test-results.tsv',
-    #               '../data/fever/shared_task_test.jsonl', 0)
-    #print('Results can be found in predictions.jsonl')
+    else:
+        print('Collect test results:')
+        test_collector(args.predicted_evidence,
+                   args.predicted_labels,
+                   args.shared_task, 0)
+        print('Results can be found in predictions.jsonl')
