@@ -220,6 +220,26 @@ differing<-table_results(bert_results, tag_mapping_results)
 ## Results sembert with OpenIE
 
 ```{r ce12}
+oie<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_oie/dev-results.tsv", header = FALSE, sep='\t')
+
+oie_results <- oie %>%
+  #filter(V4!=2)%>%
+  rowwise() %>%
+  mutate(output= which.max(list(V1,V2,V3))-1)%>%
+  mutate(right = sum(V4==output, na.rm=T))
+
+print(sum(oie_results$right)/nrow(oie_results))
+
+heatmap_errors(oie_results)
+
+ggsave(file="visuals/confusion_matrix/sembert_oie_tags1.png", width=6, height=4, dpi=400)
+
+
+```
+
+
+
+```{r ce12}
 oie<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_oie_tags1/dev-results.tsv", header = FALSE, sep='\t')
 
 oie_results <- oie %>%
@@ -237,7 +257,7 @@ ggsave(file="visuals/confusion_matrix/sembert_oie_tags1.png", width=6, height=4,
 
 ```
 
-### Comparison base_bert and sembert_tags1
+### Comparison base_bert and oie
 
 ```{r ce14}
 
@@ -294,7 +314,7 @@ ggsave(file="visuals/confusion_matrix/bert_gold.png", width=6, height=4, dpi=400
 
 ```
 
-### Sembert
+### Sembert gold
 
 ```{r ce6}
 gold<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/gold_sembert_tags1/dev-results.tsv", header = FALSE, sep='\t')
@@ -315,6 +335,51 @@ heatmap_errors(gold_results)
 ggsave(file="visuals/confusion_matrix/sembert_gold.png", width=6, height=4, dpi=400)
 
 ```
+
+
+### Sembert gold little
+
+```{r ce6}
+gold<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/gold_little/dev-results3.tsv", header = FALSE, sep='\t')
+
+gold_results <- gold %>%
+  #filter(V4!=2)%>%
+  rowwise() %>%
+  mutate(output= which.max(list(V1,V2,V3))-1)%>%
+  #filter(output!=2)%>%
+  mutate(right = sum(V4==output, na.rm=T))
+
+print(sum(gold_results$right)/nrow(gold_results))
+
+#table(sembert_12_results[, c("output", "V4")])
+
+heatmap_errors(gold_results)
+
+ggsave(file="visuals/confusion_matrix/sembert_gold_little.png", width=6, height=4, dpi=400)
+
+```
+
+
+```{r ce6}
+gold<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/gold_little/dev-results4.tsv", header = FALSE, sep='\t')
+
+gold_results <- gold %>%
+  #filter(V4!=2)%>%
+  rowwise() %>%
+  mutate(output= which.max(list(V1,V2,V3))-1)%>%
+  #filter(output!=2)%>%
+  mutate(right = sum(V4==output, na.rm=T))
+
+print(sum(gold_results$right)/nrow(gold_results))
+
+#table(sembert_12_results[, c("output", "V4")])
+
+heatmap_errors(gold_results)
+
+ggsave(file="visuals/confusion_matrix/sembert_gold_little.png", width=6, height=4, dpi=400)
+
+```
+
 
 
 ```{r ce1, include=FALSE, eval=FALSE}

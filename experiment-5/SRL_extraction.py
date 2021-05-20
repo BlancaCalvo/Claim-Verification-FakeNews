@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_file", default='data/gear/gear-train-set-0_001.tsv', type=str, required=True)
-    parser.add_argument("--output_file", default='data/graph_features/srl_features.json', type=str, required=True)
+    parser.add_argument("--output_file", default='data/srl_features/srl_features.json', type=str, required=True)
     parser.add_argument("--cuda", default=-1, type=int, required=False) # set to 0
     args = parser.parse_args()
     print(args.input_file)

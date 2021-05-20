@@ -37,7 +37,7 @@ def map_srl(srl, type=None):
     if type == None:
         return srl
     else:
-        tags1 = {'[PAD]': 'PAD', '[CLS]': '[CLS]', '[SEP]': '[SEP]', 'B-V': 'V', 'I-V': 'V', 'B-ARG0': 'ARG0',
+        tags1 = {'[PAD]': '[PAD]', '[CLS]': '[CLS]', '[SEP]': '[SEP]', 'B-V': 'V', 'I-V': 'V', 'B-ARG0': 'ARG0',
                   'I-ARG0': 'ARG0', 'B-ARG1': 'ARG1', 'I-ARG1': 'ARG1', 'B-ARG2': 'ARG2', 'I-ARG2': 'ARG2', 'B-ARG3':'ARG3', 'I-ARG3':'ARG3', 'B-ARG4': 'ARG4',
                   'I-ARG4': 'ARG4', 'B-ARGM-TMP': 'TMP', 'I-ARGM-TMP': 'TMP', 'B-ARGM-LOC': 'LOC', 'I-ARGM-LOC': 'LOC',
                   'B-ARGM-CAU': 'ARGM', 'I-ARGM-CAU': 'ARGM', 'B-ARGM-PRP': 'ARGM',  'B-R-ARG0':'ARG0', 'I-R-ARG0':'ARG0',

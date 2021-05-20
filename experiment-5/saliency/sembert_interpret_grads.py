@@ -82,6 +82,8 @@ def generate_saliency(model, model_path, test, data_loader, saliency_path, salie
         # batch[5] -> labels
         # batch[6] -> indexes
 
+        print(batch[5])
+
         token_ids += batch[0].detach().cpu().numpy().tolist()
 
         # adds the embedding dimension to the input
@@ -126,7 +128,10 @@ def generate_saliency(model, model_path, test, data_loader, saliency_path, salie
             for prop in range(12):
                 prop_sal = {'prop': str(prop)}
                 for cls_ in range(labels):
-                    #print(len(class_attr_list_tags[cls_][instance_i][prop]))
+                    #print(instance_i)
+                    #print(prop)
+                    #print(cls_)
+                    #print(class_attr_list_tags[cls_][instance_i][prop])
                     prop_sal[int(cls_)] = class_attr_list_tags[cls_][instance_i][prop][0]
                 prop_saliencies.append(prop_sal)
 
@@ -218,8 +223,8 @@ if __name__ == "__main__":
             print('Running aggregation ', aggregation, flush=True)
 
             path_out = args.model_path + 'saliency_scores/'
-            #if not os.path.exists(args.path_out):
-            #    os.mkdir(args.path_out)
+            if not os.path.exists(path_out):
+                os.mkdir(path_out)
 
             #for run in range(1, 2):
             generate_saliency(model, args.model_path, eval_data, validation_dataloader, os.path.join(path_out,f'scores_{saliency}_{aggregation}'), saliency, aggregation)
