@@ -120,7 +120,8 @@ for seed in seeds:
     model.load_state_dict(checkpoint['model'])
     model.eval()
 
-    fout = open(base_dir + 'dev-results.tsv', 'w')
+    #fout = open(base_dir + 'dev-results.tsv', 'w')
+    fout = open(base_dir + 'snopes-results.tsv', 'w')
     #dev_tqdm_iterator = tqdm(dev_dataloader)
     with torch.no_grad():
         for batch in validation_dataloader:

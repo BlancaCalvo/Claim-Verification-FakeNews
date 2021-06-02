@@ -491,6 +491,9 @@ print(sum(multi$right)/nrow(multi))
 
 heatmap_errors_multi(multi)
 
+ggsave(file="visuals/confusion_matrix/multi_hop_bert.png", width=6, height=3, dpi=400)
+
+
 #multi_sem <- sembert_12_results%>%
 #  filter(V5 %in% y)
 

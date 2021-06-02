@@ -25,7 +25,7 @@ wget -O data/fever/fever.db https://s3-eu-west-1.amazonaws.com/fever.public/wiki
 python experiment-5/preprocess/retrieval_to_bert_input.py
 
 # Build the datasets for gear
-python experiment-5/preprocess/build_gear_input_set.py
+python experiment-5/preprocess/build_gear_input_set.py --test --dev --train
 
 ```
 
@@ -95,8 +95,7 @@ python experiment-5/evaluation/results_scorer.py
     --predicted_evidence data/gear/bert-nli-dev-retrieve-set.tsv 
     --actual data/fever/shared_task_dev.jsonl
 
-python experiment-5/evaluation/results_scorer.py --predicted_labels experiment-5/outputs/f_sembert-concat_True-agg_False-20batch_size-250seq_length-12n_aspect-tags1/test-results.tsv -
--predicted_evidence data/gear/bert-nli-test-retrieve-set.tsv --shared_task data/fever/shared_task_dev.jsonl --test
+python experiment-5/evaluation/results_scorer.py --predicted_labels experiment-5/outputs/f_sembert-concat_True-agg_False-20batch_size-250seq_length-12n_aspect-tags1/test-results.tsv --predicted_evidence data/gear/bert-nli-test-retrieve-set.tsv --shared_task data/fever/shared_task_dev.jsonl --test
 
 
 ```
@@ -112,5 +111,18 @@ PYTHONPATH=experiment-5/saliency/ python experiment-5/saliency/saliency_gen/inte
 
 ```
 PYTHONPATH=experiment-5/ python experiment-5/saliency/sembert_interpret_grads.py --dev_file data/srl_features/trial.json --saliency guided sal inputx --model_path PATH --dev_file DEV_JSON
+
+```
+
+### Testing with UKP-Snopes 
+
+```
+python experiment-5/preprocess/snopes_retrieval.py
+
+python experiment-5/preprocess/build_gear_input_set.py --snopes
+
+CUDA_VISIBLE_DEVICES=0 python experiment-5/SRL_extraction.py --input_file data/gear/N_gear-snopes-dev.tsv --output_file data/srl_features/snopes_dev.json --cuda 0
+
+PYTHONPATH=experiment-5 python experiment-5/evaluation/test.py --mapping tags1 --seq_length 250 --max_num_aspect 12 --batch_size 20 --dataset data/srl_features/snopes_dev.json
 
 ```

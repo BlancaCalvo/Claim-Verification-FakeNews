@@ -1,6 +1,7 @@
 ENCODING = 'utf-8'
 SENTENCE_NUM = 5
 
+import argparse
 
 def is_evidence_exist(evidence_set, evid):
     for evidence in evidence_set:
@@ -133,7 +134,7 @@ def build_with_threshold(input, output, threshold):
     fout = open(output, 'wb')
     for instance in instances:
         output_line = '%s\t%s\t%s' % (instance[0], instance[1]['label'], instance[1]['claim'])
-        if len(instance[1]['evidences']) == 0:
+        if len(instance[1]['evidences']) == 0: # possible other place where it might skip instances
             print(0)
         for evidence in instance[1]['evidences']:
             output_line += ('\t%s' % evidence)
@@ -143,22 +144,30 @@ def build_with_threshold(input, output, threshold):
 
 
 if __name__ == '__main__':
-    print('Start building gear train set...')
-    build_with_truth_and_threshold('data/gear/bert-nli-train-sr-set.tsv',
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--train", action='store_true', help="It's a train set.")
+    parser.add_argument("--dev", action='store_true', help="It's a dev set.")
+    parser.add_argument("--test", action='store_true', help="It's a test set.")
+    parser.add_argument("--snopes", action='store_true', help="It's a snopes set.")
+    args = parser.parse_args()
+
+    if args.train:
+        print('Start building gear train set...')
+        build_with_truth_and_threshold('data/gear/bert-nli-train-sr-set.tsv',
                                    'data/gear/bert-nli-train-retrieve-set.tsv',
                                    'data/gear/N_gear-train-set-0_001.tsv',
                                    'none.tsv', 0.001)
 
-    print('Start building gear dev set...')
-    build_with_threshold('data/gear/bert-nli-dev-retrieve-set.tsv',
+    if args.dev:
+        print('Start building gear dev set...')
+        build_with_threshold('data/gear/bert-nli-dev-retrieve-set.tsv',
                          'data/gear/N_gear-dev-set-0_001.tsv', 0.001)
-    # build_with_threshold('../data/bert/bert-nli-dev-retrieve-set.tsv', '../data/gear/gear-dev-set-0_1.tsv', 0.1)
-    # build_with_threshold('../data/bert/bert-nli-dev-retrieve-set.tsv', '../data/gear/gear-dev-set-0_01.tsv', 0.01)
-    # build_with_threshold('../data/bert/bert-nli-dev-retrieve-set.tsv', '../data/gear/gear-dev-set-0_0001.tsv', 0.0001)
 
-    print('Start building gear test set...')
-    build_with_threshold('data/gear/bert-nli-test-retrieve-set.tsv',
+    if args.test:
+        print('Start building gear test set...')
+        build_with_threshold('data/gear/bert-nli-test-retrieve-set.tsv',
                         'data/gear/N_gear-test-set-0_001.tsv', 0.001)
-    # build_with_threshold('../data/bert/bert-nli-test-retrieve-set.tsv', '../data/gear/gear-test-set-0_1.tsv', 0.1)
-    # build_with_threshold('../data/bert/bert-nli-test-retrieve-set.tsv', '../data/gear/gear-test-set-0_01.tsv', 0.01)
-    # build_with_threshold('../data/bert/bert-nli-test-retrieve-set.tsv', '../data/gear/gear-test-set-0_0001.tsv', 0.0001)
+
+    if args.snopes:
+        build_with_threshold('data/gear/bert-snopes-dev.tsv',
+                         'data/gear/N_gear-snopes-dev.tsv', 0.001)

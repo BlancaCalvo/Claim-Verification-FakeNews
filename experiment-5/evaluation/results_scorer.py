@@ -104,13 +104,17 @@ def test_collector(truth_file, output_file, result_file, threshold):
         claim2id[i] = json.loads(line)['id']
     fin.close()
 
+    #missing_ids = [81,404,709,896,1477,2085,2168,2210,2782,3369,3506,4408,5125,5423,5635,5676,5856,6397,6607,6722,6949,7074,7157,7325,7585,7750,8020,8473,8700,8749,9026,9270,10065,10152,10190,10701,11484,11864,12872,12900,12934,12999,13352,13620,13674,13771,14473,14548,15177,15238,15247,15531,15654,15961,16350,17185,17419,17637,18512,18889,18921,19434,19790]
     answers = []
     cnt = -1
     for i in range(0, 19998):
         answer = {}
         answer['id'] = claim2id[i]
         if i not in claim2info:
-            answer = {"predicted_label": "NOT ENOUGH INFO",  "predicted_evidence": []}
+            print(answer)
+            answer = {"id":answer['id'],"predicted_label": "NOT ENOUGH INFO",  "predicted_evidence": []} # this might be a problem when uploading to shared task, check why would it have no id
+            print(answer)
+            #del missing_ids[0]
             answers.append(answer)
             continue
         cnt += 1

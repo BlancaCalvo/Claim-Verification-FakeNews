@@ -30,6 +30,7 @@ def process(input, output):
 
     fout = open(output, 'wb')
     for instance in tqdm(instances):
+        at_least_one = False
         index, label, claim, evidences = instance
         for evidence in evidences:
             article = evidence[0]
@@ -57,9 +58,12 @@ def process(input, output):
                         evidence_str = sentence
                         break
             if evidence_str:
+                at_least_one = True
                 fout.write(('%s\t%s\t%s\t%s\t%s\t%d\t%s\r\n' % (label, evidence_str, claim, index, evidence[0], evidence[1], evidence[2])).encode(ENCODING))
             else:
                 print('Error: cant find %s %d for %s' % (article, location, index))
+        if not at_least_one:
+            print(instance)
     fout.close()
 
 
