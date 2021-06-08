@@ -200,7 +200,7 @@ if __name__ == "__main__":
     #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model = BertForSequenceClassificationTag.from_pretrained('bert-base-uncased', num_labels=3, tag_config=tag_config)#.to(device)
-    checkpoint = torch.load(args.model_path + '/best.pth.tar',
+    checkpoint = torch.load(args.model_path + 'best.pth.tar',
                             map_location=lambda storage, loc: storage)
     new_checkpoint = checkpoint
     checkpoint_new_names = {}
@@ -226,7 +226,8 @@ if __name__ == "__main__":
             if not os.path.exists(path_out):
                 os.mkdir(path_out)
 
-            #for run in range(1, 2):
-            generate_saliency(model, args.model_path, eval_data, validation_dataloader, os.path.join(path_out,f'scores_{saliency}_{aggregation}'), saliency, aggregation)
+            print(path_out)
+            for run in range(1, 4):
+                generate_saliency(model, args.model_path, eval_data, validation_dataloader, os.path.join(path_out,f'scores_{saliency}_{aggregation}_{run}'), saliency, aggregation)
 
             print('Done')

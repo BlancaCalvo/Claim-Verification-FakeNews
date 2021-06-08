@@ -47,6 +47,9 @@ CUDA_VISIBLE_DEVICES=0 python experiment-5/SRL_extraction.py
     --cuda 0 
 
 CUDA_VISIBLE_DEVICES=0 python experiment-5/SRL_extraction.py --input_file data/gear/gold_gear-dev-set-0_001.tsv --output_file data/srl_features/gold_dev_srl_all.json --cuda 0
+
+CUDA_VISIBLE_DEVICES=0 python experiment-5/SRL_extraction.py --input_file data/gear/examples.tsv --output_file data/srl_features/examples.json --cuda 0
+
 ```
 
 ### Train and test Sembert with Semantic Role Labels
@@ -100,18 +103,19 @@ python experiment-5/evaluation/results_scorer.py --predicted_labels experiment-5
 
 ```
 
-### Saliency Scores BERT model
+### Saliency Scores BERT model 
+
+Modified from: https://github.com/copenlu/xai-benchmark
 
 ```
-PYTHONPATH=experiment-5/saliency/ python experiment-5/saliency/saliency_gen/interpret_grads_occ.py --models_dir experiment-5/outputs/F-base-bert-2 --dataset_dir data/gear/trial.tsv --output_dir data/saliency/F-base-bert/ --saliency guided sal inputx --model trans --dataset fever --no_time
-
+PYTHONPATH=experiment-5/ python experiment-5/saliency/interpret_grads_occ.py --models_dir experiment-5/outputs/F-base-bert-2/ --dataset_dir data/gear/examples.tsv --saliency guided sal
+ inputx --model trans --dataset fever --no_time
 ```
 
 ### Saliency Scores SemBERT model
 
 ```
-PYTHONPATH=experiment-5/ python experiment-5/saliency/sembert_interpret_grads.py --dev_file data/srl_features/trial.json --saliency guided sal inputx --model_path PATH --dev_file DEV_JSON
-
+PYTHONPATH=experiment-5/ python experiment-5/saliency/sembert_interpret_grads.py --dev_file data/srl_features/examples.json --saliency guided sal inputx
 ```
 
 ### Testing with UKP-Snopes 

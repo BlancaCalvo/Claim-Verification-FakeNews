@@ -24,20 +24,10 @@ library(forcats)
 
 ```{r select_data}
 
-normalized<-function(y) {
-
-  x<-y[!is.na(y)]
-
-  x<-(x - min(x)) / (max(x) - min(x))
-
-  y[!is.na(y)]<-x
-
-  return(y)
-  }
-
 get_format_sal <- function(list_metrics,id, list_metric_names, true_label, props=FALSE){
   final_list <- data.frame(V1=integer(), ID=factor(), stat=character(), order=factor()) 
   for(i in 1:length(list_metrics)) {
+    #print(i)
     example <- list_metrics[[i]][id,]
 
     token_names <- example%>%
@@ -57,10 +47,22 @@ get_format_sal <- function(list_metrics,id, list_metric_names, true_label, props
   token_values['ID'] <- token_names[,1]
   token_values$ID = as.factor(token_values$ID)
   token_values$V1 = as.numeric(token_values$V1)
-  #token_values$V1 = apply(token_values[,1],2,normalized)
+  token_values <- token_values%>%
+    mutate(mean=mean(token_values$V1))%>%
+    mutate(normalised=V1-mean)
+  
+  #print(token_values$V1)
+  #print(token_values$normalised)
+  
+  #print('before filtering')
+  #print(nrow(token_values))
+  
+  #print(token_values$ID)
 
   token_values <- token_values%>%
     filter(ID != '[PAD]')
+  
+  #print(nrow(token_values))
   
   if (props==TRUE){
     tag_names <- example%>%
@@ -77,6 +79,9 @@ get_format_sal <- function(list_metrics,id, list_metric_names, true_label, props
     tag_values['ID'] <- tag_names[,1]
     tag_values$ID = as.factor(tag_values$ID)
     tag_values$V1 = as.numeric(tag_values$V1)
+    tag_values <- tag_values%>%
+      mutate(mean=mean(tag_values$V1))%>%
+      mutate(normalised=V1-mean)
     
     #print(colnames(tag_values))
     
@@ -99,106 +104,63 @@ get_format_sal <- function(list_metrics,id, list_metric_names, true_label, props
 ```
 
 
-```{r load_data}
-lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/bert_base/saliency/F-base-bert-2_1_sal_l2")
-lines <- lapply(lines, fromJSON)
-lines <- lapply(lines, unlist)
-metric1 <- bind_rows(lines)
-lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/bert_base/saliency/F-base-bert-2_1_guided_l2")
-lines <- lapply(lines, fromJSON)
-lines <- lapply(lines, unlist)
-metric2 <- bind_rows(lines)
-lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/bert_base/saliency/F-base-bert-2_1_inputx_l2")
-lines <- lapply(lines, fromJSON)
-lines <- lapply(lines, unlist)
-metric3 <- bind_rows(lines)
-
-list_metrics <- list(metric1,metric2,metric3)
-list_metric_names <- c('saliency','guided','inputx')
-
-#example1_1 <- metric1[3,] # SUPPORTS
-#example1_2 <- metric2[3,] # SUPPORTS
-#example1_3 <- metric3[3,] # SUPPORTS
-```
-
-```{r plot_support}
-metrics_list<- get_format_sal(list_metrics, 5, list_metric_names, '0')
-
-#token_values <- get_format_sal(example1_1)
-
-metrics_list%>%
-  #mutate(ID = fct_reorder(ID,order)) %>%
-  #filter(ID!='NA')%>%
-  ggplot(aes(x=order, y=stat, fill=V1)) + geom_tile()+
-  scale_fill_gradient(low = "white", high = "#4186BE") +
-  theme(axis.text.x = element_text(angle = 70, size = 7))+
-  scale_x_discrete(labels=metrics_list[["ID"]][1:299])+
-  #xlim(0, length(unique(metrics_list$ID)))
-  labs(x="Token",y="Metric")
-  
-
-ggsave(file="visuals/saliency/bert_support_example.png", width=30, height=4, dpi=400)
-
-```
-
-```{r plot_refute}
-metrics_list<- get_format_sal(list_metrics, 5, list_metric_names, '1')
-
-#token_values <- get_format_sal(example1_1)
-
-metrics_list%>%
-  #mutate(ID = fct_reorder(ID,order)) %>%
-  #filter(ID!='NA')%>%
-  ggplot(aes(x=order, y=stat, fill=V1)) + geom_tile()+
-  scale_fill_gradient(low = "white", high = "#4186BE") +
-  theme(axis.text.x = element_text(angle = 70, size = 7))+
-  scale_x_discrete(labels=metrics_list[["ID"]][1:299])+
-  #xlim(0, length(unique(metrics_list$ID)))
-  labs(x="Token",y="Metric")
-  
-
-ggsave(file="visuals/saliency/bert_refute_example.png", width=30, height=4, dpi=400)
-
-```
-
-## Sembert
-
+### Sembert tags1
 
 ```{r load_data_s}
-lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_all_tags/saliency/scores_sal_l2_1")
+lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_tags1/saliency_scores/saliency_scores/scores_sal_l2")
 lines <- lapply(lines, fromJSON)
 lines <- lapply(lines, unlist)
 metric11 <- bind_rows(lines)
-lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_all_tags/saliency/scores_guided_l2_1")
+metric11 <- metric11[order(metric11$tokens.token2),]
+
+lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_tags1/saliency_scores/saliency_scores/scores_guided_l2")
 lines <- lapply(lines, fromJSON)
 lines <- lapply(lines, unlist)
-metric21 <- bind_rows(lines)
-lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_all_tags/saliency/scores_inputx_l2_1")
+metric12 <- bind_rows(lines)
+metric12 <- metric12[order(metric12$tokens.token2),]
+
+lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_tags1/saliency_scores/saliency_scores/scores_inputx_l2")
 lines <- lapply(lines, fromJSON)
 lines <- lapply(lines, unlist)
-metric31 <- bind_rows(lines)
+metric13 <- bind_rows(lines)
+metric13 <- metric13[order(metric13$tokens.token2),]
 
-list_metrics <- list(metric11,metric21,metric31)
-list_metric_names <- c('saliency_l2','guided_l2','inputx_l2')
-list_labels = list('2', '2', '0', '2', '1', '1', '0', '1', '2', '1')
 
-#example1_1 <- metric1[3,] # SUPPORTS
-#example1_2 <- metric2[3,] # SUPPORTS
-#example1_3 <- metric3[3,] # SUPPORTS
+lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_tags1/saliency_scores/saliency_scores/scores_sal_l2_3")
+lines <- lapply(lines, fromJSON)
+lines <- lapply(lines, unlist)
+metric14 <- bind_rows(lines)
+metric14 <- metric14[order(metric14$tokens.token2),]
+
+lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_tags1/saliency_scores/saliency_scores/scores_guided_l2_3")
+lines <- lapply(lines, fromJSON)
+lines <- lapply(lines, unlist)
+metric15 <- bind_rows(lines)
+metric15 <- metric15[order(metric15$tokens.token2),]
+
+lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_tags1/saliency_scores/saliency_scores/scores_inputx_l2_3")
+lines <- lapply(lines, fromJSON)
+lines <- lapply(lines, unlist)
+metric16 <- bind_rows(lines)
+metric16 <- metric16[order(metric16$tokens.token2),]
 ```
 
+```{r}
+list_metrics = list(metric11, metric12, metric13, metric14, metric15, metric16)
+list_metric_names = c('saliency_l2','guided_l2','inputx_l2','saliency_l2_2','guided_l2_2','inputx_l2_2')
+list_labels = list('0', '1', '1', '2', '0', '1', '0')
 
-```{r plot_support_s}
-for (i in 1:range(10)){
+for (i in 1:range(length(list_labels))){
+  print('example number')
   print(i)
-metrics_list<- get_format_sal(list_metrics, i, list_metric_names,list_labels[i], props = TRUE)
+metrics_list<- get_format_sal(list_metrics, i, list_metric_names,list_labels[i], props = FALSE)
 
 #token_values <- get_format_sal(example1_1)
 
 metrics_list%>%
   #mutate(ID = fct_reorder(ID,order)) %>%
   #filter(ID!='NA')%>%
-  ggplot(aes(x=order, y=stat, fill=V1)) + geom_tile()+
+  ggplot(aes(x=order, y=stat, fill=normalised)) + geom_tile()+
   scale_fill_gradient(low = "white", high = "#4186BE") +
   theme(axis.text.x = element_text(angle = 70, size = 7))+
   scale_x_discrete(labels=metrics_list[["ID"]][1:299])+
@@ -207,15 +169,146 @@ metrics_list%>%
 
 name_file = paste0("visuals/saliency/sembert_example", as.character(i))
 name_file =paste0(name_file, '.png')
+print(name_file)
 
 ggsave(file=name_file, width=30, height=4, dpi=400)
 
 }
-  
+```
 
-#ggsave(file="image1_s.png", width=30, height=4, dpi=400)
+### BERT tags1
+
+```{r load_data_s}
+lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/bert_base/saliency_scores/right_scores/scores_sal_l2_3")
+lines <- lapply(lines, fromJSON)
+lines <- lapply(lines, unlist)
+metric21 <- bind_rows(lines)
+metric21 <- metric21[order(metric21$tokens.token2),]
+
+lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/bert_base/saliency_scores/right_scores/scores_guided_l2_3")
+lines <- lapply(lines, fromJSON)
+lines <- lapply(lines, unlist)
+metric22 <- bind_rows(lines)
+metric22 <- metric22[order(metric22$tokens.token2),]
+
+lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/bert_base/saliency_scores/right_scores/scores_inputx_l2_3")
+lines <- lapply(lines, fromJSON)
+lines <- lapply(lines, unlist)
+metric23 <- bind_rows(lines)
+metric23 <- metric23[order(metric23$tokens.token2),]
+
+lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/bert_base/saliency_scores/right_scores/scores_sal_l2_1")
+lines <- lapply(lines, fromJSON)
+lines <- lapply(lines, unlist)
+metric24 <- bind_rows(lines)
+metric24 <- metric24[order(metric24$tokens.token2),]
+
+lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/bert_base/saliency_scores/right_scores/scores_guided_l2_1")
+lines <- lapply(lines, fromJSON)
+lines <- lapply(lines, unlist)
+metric25 <- bind_rows(lines)
+metric25 <- metric25[order(metric25$tokens.token2),]
+
+lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/bert_base/saliency_scores/right_scores/scores_inputx_l2_1")
+lines <- lapply(lines, fromJSON)
+lines <- lapply(lines, unlist)
+metric26 <- bind_rows(lines)
+metric26 <- metric26[order(metric26$tokens.token2),]
 
 ```
+
+```{r}
+list_metrics = list(metric21, metric22, metric23)
+list_metric_names = c('saliency_l2','guided_l2','inputx_l2')
+list_labels = list('0', '1', '1', '2', '0', '1', '0')
+
+for (i in 1:range(length(list_labels))){
+  print(i)
+metrics_list<- get_format_sal(list_metrics, i, list_metric_names,list_labels[i], props = FALSE)
+
+#token_values <- get_format_sal(example1_1)
+
+metrics_list%>%
+  #mutate(ID = fct_reorder(ID,order)) %>%
+  #filter(ID!='NA')%>%
+  ggplot(aes(x=order, y=stat, fill=normalised)) + geom_tile()+
+  scale_fill_gradient(low = "white", high = "#4186BE") +
+  theme(axis.text.x = element_text(angle = 70, size = 7))+
+  scale_x_discrete(labels=metrics_list[["ID"]][1:299])+
+  #xlim(0, length(unique(metrics_list$ID)))
+  labs(x="Token",y="Metric")
+
+name_file = paste0("visuals/saliency/bert_example", as.character(i))
+name_file =paste0(name_file, '.png')
+print(name_file)
+
+ggsave(file=name_file, width=30, height=4, dpi=400)
+
+}
+```
+
+## Comparison
+
+```{r}
+#list_metrics = list(metric21, metric14)
+#list_metric_names = c('saliency_bert','saliency_sembert')
+list_metrics = list(metric13, metric16, metric12, metric15, metric11, metric14, metric23, metric26, metric22, metric25, metric21, metric24)
+list_metric_names = c('sembert_inputx_1','sembert_inputx_2','sembert_guided_1','sembert_guided_2','sembert_saliency_1','sembert_saliency_2', 'bert_inputx_1','bert_inputx_2','bert_guided_1','bert_guided_2', 'bert_saliency_1', 'bert_saliency_2')
+#list_labels = list('1', '0', '2', '1', '1', '0', '0')
+
+for (i in 1:range(length(list_labels))){
+  print(i)
+metrics_list<- get_format_sal(list_metrics, i, list_metric_names,list_labels[i], props = FALSE)
+
+#token_values <- get_format_sal(example1_1)
+
+metrics_list%>%
+  #mutate(ID = fct_reorder(ID,order)) %>%
+  #filter(ID!='NA')%>%
+  ggplot(aes(x=order, y=stat, fill=normalised)) + geom_tile()+
+  scale_fill_gradient(low = "white", high = "#4186BE") +
+  theme(axis.text.x = element_text(angle = 70, size = 7))+
+  scale_x_discrete(labels=metrics_list[["ID"]][1:299])+
+  #xlim(0, length(unique(metrics_list$ID)))
+  labs(x="Token",y="Metric")
+
+name_file = paste0("visuals/saliency/comparison", as.character(i))
+name_file =paste0(name_file, '.png')
+print(name_file)
+
+ggsave(file=name_file, width=30, height=4, dpi=400)
+
+}
+```
+
+## Plots for report
+
+```{r telemundo}
+i = 6
+
+metrics_list<- get_format_sal(list_metrics, i, list_metric_names,list_labels[i], props = FALSE)
+
+#token_values <- get_format_sal(example1_1)
+
+metrics_list%>%
+  #mutate(ID = fct_reorder(ID,order)) %>%
+  filter(as.integer(order)< 100)%>%
+  ggplot(aes(x=order, y=stat, fill=normalised)) + geom_tile()+
+  scale_fill_gradient(low = "white", high = "#4186BE") +
+  theme(axis.text.x = element_text(angle = 70, size = 12), axis.text.y = element_text(size = 12))+
+  scale_x_discrete(labels=metrics_list[["ID"]][1:299])+
+  #theme(axis.text.x = element_blank(), axis.text.y=element_blank())+
+  #xlim(0, length(unique(metrics_list$ID)))
+  labs(x="Token",y="Metric")
+
+name_file = paste0("visuals/saliency/telemundo_example", as.character(i))
+name_file =paste0(name_file, '.png')
+print(name_file)
+
+ggsave(file=name_file, width=30, height=4, dpi=400) #width=9, height=2, dpi=100
+```
+
+
 
 ## Sembert Gold
 
@@ -271,89 +364,3 @@ metrics_list%>%
 ggsave(file="visuals/saliency/gold_example.png", width=30, height=4, dpi=400)
 
 ```
-
-
-```{r props}
-
-metrics_list<- get_format_sal(list_metrics, 3, list_metric_names, '0', props = TRUE)
-
-#token_values <- get_format_sal(example1_1)
-
-metrics_list%>%
-  #mutate(ID = fct_reorder(ID,order)) %>%
-  filter(str_detect(row.names(metrics_list), "props"))%>%
-  ggplot(aes(x=order, y=stat, fill=V1)) + geom_tile()+
-  scale_fill_gradient(low = "white", high = "#4186BE") +
-  theme(axis.text.x = element_text(angle = 70, size = 7))+
-  scale_x_discrete(labels=list(1,2,3,4,5,6,7,8,9,10,11,12))+
-  #xlim(0, length(unique(metrics_list$ID)))
-  labs(x="Token",y="Metric")
-
-```
-
-
-4.133838653564453       -1.1518515348434448     -2.8087878227233887     0       19988
--1.8166931867599487     3.7368228435516357      -2.07185697555542       1       19989
-3.038501024246216       -0.5944563150405884     -2.2964770793914795     0       19990
-3.8639352321624756      -0.8662200570106506     -2.826799154281616      0       19991
--1.6927106380462646     3.4238221645355225      -1.829237937927246      1       19992
-2.090590476989746       0.36400893330574036     -2.449695348739624      1       19993
--1.766148328781128      3.250563383102417       -1.5731141567230225     1       19994
-3.982449769973755       -0.8585338592529297     -2.9916036128997803     0       19995
--3.0836873054504395     -2.198235511779785      5.581490993499756       2       19996
--1.9053245782852173     3.5374648571014404      -1.730604887008667      1       19997
-
-19988   SUPPORTS        Pearl (Steven Universe) projects a holographic body.    She is a `` Gem '' , a fictional alien being that exists as a magical gemstone projecting a holographic body .
-19989   REFUTES American Sniper (book) is about cats and dogs only.     American Sniper : The Autobiography of the Most Lethal Sniper in U.S. Military History is an autobiography by United States Navy SEAL Chris Kyle , written with
- Scott McEwen and Jim DeFelice .
-19990   SUPPORTS        Amy Winehouse died on 23 July 2011.     Amy Jade Winehouse -LRB- 14 September 1983 -- 23 July 2011 -RRB- was an English singer and songwriter .
-19991   SUPPORTS        Java was formed by volcanic eruptions.  Formed mostly as the result of volcanic eruptions , Java is the 13th largest island in the world and the fifth largest in Indonesia .
-19992   REFUTES Firefox is the second most popular dog breed.   , Firefox has between 9 % and 16 % of worldwide usage as a `` desktop '' browser , making it the second most popular web browser .
-19993   REFUTES Hermit crabs are arachnids.     Hermit crabs are decapod crustaceans of the superfamily Paguroidea .    The Decapoda or decapods -LRB- literally `` ten-footed '' -RRB- are an order of crustaceans within the class Ma
-lacostraca , including many familiar groups , such as crayfish , crabs , lobsters , prawns , and shrimp .
-19994   REFUTES Michael Hutchence died on a boat.       On the morning of 22 November 1997 , Hutchence was found dead in his hotel room in Sydney .
-19995   SUPPORTS        The Cyclades are located to the southeast of Greece's mainland. The Cyclades -LRB- -LSB- ˈsɪklədiːz -RSB- Κυκλάδες , -LSB- cikˈlaðes -RSB- -RRB- are an island group in the Aegean Sea , southeast of mainland
-Greece and a former administrative prefecture of Greece .
-19996   NOTENOUGHINFO   Theresa May worked the docks.   From 1977 until 1983 , she worked for the Bank of England , and from 1985 until 1997 at the Association for Payment Clearing Services , also serving as a councillor for Durnsf
-ord in Merton . Theresa Mary May -LRB- née Brasier ; born 1 October 1956 -RRB- is a British politician who has served as Prime Minister of the United Kingdom since 2016 .      During her tenure she pursued reform of the Police Fede
-ration , implemented a harder line on drugs policy including the banning of khat , oversaw the introduction of elected Police and Crime Commissioners , the deportation of Abu Qatada , the creation of the National Crime Agency and b
-rought in additional restrictions on immigration .      She has been the Member of Parliament -LRB- MP -RRB- for Maidenhead since 1997 and Leader of the Conservative Party since July 2016 .   After unsuccessful attempts to be elect
-ed to the House of Commons in 1992 and 1994 , she was elected as the MP for Maidenhead in the 1997 general election .
-19997   REFUTES Trouble with the Curve is a television show.    Trouble with the Curve is a 2012 sports-drama film directed by Robert Lorenz , and starring Clint Eastwood , Amy Adams , Justin Timberlake , Matthew Lillard and John G
-oodman .
-
-### Sembert tags1
-
-```{r load_data_s}
-lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_tags1/saliency_scores2/scores_guided_l2")
-lines <- lapply(lines, fromJSON)
-lines <- lapply(lines, unlist)
-metric12 <- bind_rows(lines)
-
-lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_tags1/saliency_scores2/trial2")
-lines <- lapply(lines, fromJSON)
-lines <- lapply(lines, unlist)
-metric11 <- bind_rows(lines)
-
-```
-
-```{r}
-list_metrics = list(metric12)
-list_metric_names = list('just trying')
-metrics_list<- get_format_sal(list_metrics, 5, list_metric_names, '1', props = TRUE)
-
-metrics_list%>%
-  #mutate(ID = fct_reorder(ID,order)) %>%
-  #filter(ID!='NA')%>%
-  ggplot(aes(x=order, y=stat, fill=V1)) + geom_tile()+
-  scale_fill_gradient(low = "white", high = "#4186BE") +
-  theme(axis.text.x = element_text(angle = 70, size = 7))+
-  scale_x_discrete(labels=metrics_list[["ID"]][1:299])+
-  #xlim(0, length(unique(metrics_list$ID)))
-  labs(x="Token",y="Metric")
-
-#ggsave(file="visuals/saliency/trial.png", width=30, height=4, dpi=400)
-```
-
-
-

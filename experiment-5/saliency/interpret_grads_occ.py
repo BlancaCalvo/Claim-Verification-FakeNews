@@ -13,14 +13,51 @@ from captum.attr import DeepLift, GuidedBackprop, InputXGradient, Occlusion, \
     Saliency, configure_interpretable_embedding_layer, \
     remove_interpretable_embedding_layer
 from pypapi import events, papi_high as high
-from torch.utils.data import DataLoader
+#from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import BertConfig, BertForSequenceClassification, \
     BertTokenizer
 
-from models.data_loader import get_collate_fn, get_dataset
+from base_bert.extractor import convert_examples_to_features, InputExample
+#from base_bert.fever_bert import read_examples
+from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
+
+#from models.data_loader import get_collate_fn, get_dataset
 #from models.model_builder import CNN_MODEL, LSTM_MODEL
 
+def read_examples(input_file):
+    """Read input to dictionary."""
+    unique_id = 0
+    examples = []
+    with open(input_file, "r", encoding='utf-8') as reader:
+        while True:
+            line = reader.readline()
+            if not line:
+                break
+            line = line.strip().split('\t')
+
+            index = line[0]
+            label = line[1]
+            claim = line[2]
+            evidences = line[3:]
+            #new_evidences = []
+            #for evidence in evidences:
+            #    evidence = re.sub(r'\.[a-zA-Z \-é0-9\(\)]*$', '', evidence)  # run this if fever_bert_srl gives bad score
+            #    new_evidences.append(evidence)
+            evi_concat = ' '.join(evidences)
+
+            if label == 'SUPPORTS':
+                label = 0
+            elif label == 'REFUTES':
+                label = 1
+            elif label == 'NOTENOUGHINFO':
+                label = 2
+
+            examples.append(InputExample(unique_id=unique_id, text_a=claim, text_b=evi_concat,
+                                         label=label, index=index, is_claim=False))
+
+            unique_id += 1
+    return examples
 
 def summarize_attributions(attributions, type='mean', model=None, tokens=None):
     if type == 'none':
@@ -92,23 +129,34 @@ def generate_saliency(model_path, saliency_path, saliency, aggregation):
     elif saliency == 'occlusion':
         ablator = Occlusion(model)
 
-    coll_call = get_collate_fn(dataset=args.dataset, model=args.model)
+    #coll_call = get_collate_fn(dataset=args.dataset, model=args.model)
 
-    return_attention_masks = args.model == 'trans'
+    #return_attention_masks = args.model == 'trans'
 
-    collate_fn = partial(coll_call, tokenizer=tokenizer, device=device,
-                         return_attention_masks=return_attention_masks,
-                         pad_to_max_length=pad_to_max)
-    test = get_dataset(path=args.dataset_dir, mode=args.split,
-                       dataset=args.dataset)
-    #batch_size = args.batch_size if args.batch_size != None else \
-    #    batch_size
-    #test = args.dataset_dir
+    #collate_fn = partial(coll_call, tokenizer=tokenizer, device=device,
+    #                     return_attention_masks=return_attention_masks,
+    #                     pad_to_max_length=pad_to_max)
+    #test = get_dataset(path=args.dataset_dir, mode=args.split,
+    #                   dataset=args.dataset)
 
-    test_dl = DataLoader(batch_size=batch_size, dataset=test, shuffle=False, collate_fn=collate_fn)
+    #test_dl = DataLoader(batch_size=batch_size, dataset=test, shuffle=False, collate_fn=collate_fn)
+
+    test_dataset = read_examples(args.dataset_dir)
+
+    test_encoded_dataset = convert_examples_to_features(examples=test_dataset, seq_length=250, tokenizer=tokenizer)
+
+    # CREATE TENSORS
+    test_inputs = torch.tensor([f.input_ids for f in test_encoded_dataset], dtype=torch.long)
+    test_labels = torch.tensor([f.label for f in test_encoded_dataset], dtype=torch.long)
+    test_masks = torch.tensor([f.input_mask for f in test_encoded_dataset], dtype=torch.long)
+
+    test_data = TensorDataset(test_inputs, test_masks, test_labels)
+    test_sampler = RandomSampler(test_data)
+    test_dl = DataLoader(test_data, sampler=test_sampler,
+                                  batch_size=batch_size)
 
     # PREDICTIONS
-    predictions_path = model_path + '/trial-results.tsv'
+    predictions_path = model_path + '/example-results.tsv'
     #predictions_path = None
     if not os.path.exists(predictions_path):
         predictions = defaultdict(lambda: [])
@@ -181,7 +229,9 @@ def generate_saliency(model_path, saliency_path, saliency, aggregation):
     # SERIALIZE
     print('Serializing...', flush=True)
     with open(saliency_path, 'w') as out:
-        for instance_i, _ in enumerate(test):
+        print(saliency_path)
+        for instance_i, _ in enumerate(test_dataset):
+            print(instance_i)
             saliencies = []
             for token_i, token_id in enumerate(token_ids[instance_i]):
                 token_sal = {'token': tokenizer.ids_to_tokens[token_id]}
@@ -247,7 +297,7 @@ if __name__ == "__main__":
         print('Running Saliency ', saliency, flush=True)
 
         if saliency in ['guided', 'sal', 'inputx', 'deeplift']:
-            aggregations = ['mean', 'l2']
+            aggregations = ['l2', 'mean']
         else:  # occlusion
             aggregations = ['none']
 
@@ -255,14 +305,16 @@ if __name__ == "__main__":
             flops = []
             print('Running aggregation ', aggregation, flush=True)
 
-            models_dir = args.models_dir
-            base_model_name = models_dir.split('/')[-1]
-            for model in range(1, 6):
+            #base_model_name = models_dir.split('/')[-1]
+            path_out = args.models_dir + 'saliency_scores/'
+            if not os.path.exists(path_out):
+                os.mkdir(path_out)
+
+            for run in range(1, 4):
                 curr_flops = generate_saliency(
                     #os.path.join(models_dir + '/best.pth.tar'),
-                    models_dir,
-                    os.path.join(args.output_dir,
-                                 f'{base_model_name}_{model}_{saliency}_{aggregation}'),
+                    args.models_dir,
+                    os.path.join(path_out,f'scores_{saliency}_{aggregation}_{run}'),
                     saliency,
                     aggregation)
 
