@@ -26,8 +26,9 @@ parser.add_argument("--mapping", default=None, type=str, required=False)
 parser.add_argument("--seq_length", default=250, type=int, required=False)
 parser.add_argument("--batch_size", default=20, type=int, required=False)
 parser.add_argument("--model_path", default=None, type=str, required=False)
-parser.add_argument("--test", action='store_true', help="Set this flag to test on the test dataset.")
-parser.add_argument("--trial", action='store_true', help="Set this flag to test on a trial dataset.")
+#parser.add_argument("--test", action='store_true', help="Set this flag to test on the test dataset.")
+#parser.add_argument("--trial", action='store_true', help="Set this flag to test on a trial dataset.")
+parser.add_argument("--out", default=None, type=str, required=True)
 #parser.add_argument("--cuda_devices", default='-1', type=str, required=False)
 
 args = parser.parse_args()
@@ -112,12 +113,14 @@ for seed in seeds:
     model.load_state_dict(new_checkpoint['model'])
     model.eval()
 
-    if args.test:
-        fout = open(base_dir + 'test-results.tsv', 'w')
-    elif args.trial:
-        fout = open(base_dir + 'trial-results.tsv', 'w')
-    else:
-        fout = open(base_dir + 'dev-results.tsv', 'w')
+    #if args.test:
+    #    fout = open(base_dir + 'test-results.tsv', 'w')
+    #elif args.trial:
+    #    fout = open(base_dir + 'trial-results.tsv', 'w')
+    #else:
+    #    fout = open(base_dir + 'dev-results.tsv', 'w')
+    fout = open(base_dir + args.out, 'w')
+
     #dev_tqdm_iterator = tqdm(dev_dataloader)
     with torch.no_grad():
         for batch in dev_dataloader:

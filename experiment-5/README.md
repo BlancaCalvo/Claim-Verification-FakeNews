@@ -34,7 +34,7 @@ python experiment-5/preprocess/build_gear_input_set.py --test --dev --train
 ```
 CUDA_VISIBLE_DEVICES=0 python experiment-5/base_bert/fever_bert.py 
 
-CUDA_VISIBLE_DEVICES=0 python experiment-5/base_bert/test.py
+CUDA_VISIBLE_DEVICES=0 python experiment-5/base_bert/test.py --out dev-results.tsv
 ```
 
 
@@ -59,7 +59,7 @@ python experiment-5/sembert_train.py  --train_file data/srl_features/N_train_srl
 
 python experiment-5/sembert_train.py  --train_file data/srl_features/gold_train_srl_all.json --dev_file data/srl_features/gold_dev_srl_all.json --mapping tags1 --cuda_devices 1 --seq_length 50 --batch_size 20 --max_num_aspect 4
 
-PYTHONPATH=experiment-5 python experiment-5/evaluation/test.py --mapping tags1 --seq_length 250 --max_num_aspect 12 --batch_size 20 --model_path PATH --dataset DEV_JSON
+PYTHONPATH=experiment-5 python experiment-5/evaluation/test.py --mapping tags1 --seq_length 250 --max_num_aspect 12 --batch_size 20 --dataset data/srl_features/dev_srl_all.json --out dev-results.txt
 ```
 
 ### OpenIE extraction
@@ -118,6 +118,16 @@ PYTHONPATH=experiment-5/ python experiment-5/saliency/interpret_grads_occ.py --m
 PYTHONPATH=experiment-5/ python experiment-5/saliency/sembert_interpret_grads.py --dev_file data/srl_features/examples.json --saliency guided sal inputx
 ```
 
+### Testing with adversarial attacks
+
+```
+CUDA_VISIBLE_DEVICES=0 python experiment-5/SRL_extraction.py --input_file data/gear/adversarial_examples.tsv --output_file data/srl_features/adversarial_examples.json --cuda 0
+
+PYTHONPATH=experiment-5 python experiment-5/evaluation/test.py --mapping tags1 --seq_length 250 --max_num_aspect 12 --batch_size 20 --dataset data/srl_features/adversarial_examples.json --out adver-results.tsv
+
+CUDA_VISIBLE_DEVICES=0 python experiment-5/base_bert/test.py --dev_features data/gear/adversarial_examples.tsv --out adver-results.tsv
+```
+
 ### Testing with UKP-Snopes 
 
 ```
@@ -127,6 +137,7 @@ python experiment-5/preprocess/build_gear_input_set.py --snopes
 
 CUDA_VISIBLE_DEVICES=0 python experiment-5/SRL_extraction.py --input_file data/gear/N_gear-snopes-dev.tsv --output_file data/srl_features/snopes_dev.json --cuda 0
 
-PYTHONPATH=experiment-5 python experiment-5/evaluation/test.py --mapping tags1 --seq_length 250 --max_num_aspect 12 --batch_size 20 --dataset data/srl_features/snopes_dev.json
+PYTHONPATH=experiment-5 python experiment-5/evaluation/test.py --mapping tags1 --seq_length 250 --max_num_aspect 12 --batch_size 20 --dataset data/srl_features/snopes_dev.json --out snopes-results.tsv
 
 ```
+

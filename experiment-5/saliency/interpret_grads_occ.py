@@ -96,28 +96,19 @@ def generate_saliency(model_path, saliency_path, saliency, aggregation):
     #model_args = Namespace(**checkpoint['args'])
     labels = 3
     batch_size = 16
-    #if args.model == 'lstm':
-    #    model = LSTM_MODEL(tokenizer, model_args,
-    #                       n_labels=checkpoint['args']['labels']).to(device)
-    #    model.load_state_dict(checkpoint['model'])
-    if args.model == 'trans':
-        transformer_config = BertConfig.from_pretrained('bert-base-uncased',
+
+    transformer_config = BertConfig.from_pretrained('bert-base-uncased',
                                                         num_labels=labels)
-        model_cp = BertForSequenceClassification.from_pretrained(
+    model_cp = BertForSequenceClassification.from_pretrained(
             'bert-base-uncased', config=transformer_config).to(
             device)
-        checkpoint = torch.load(model_path+'/best.pth.tar',
+    checkpoint = torch.load(model_path+'/best.pth.tar',
                                 map_location=lambda storage, loc: storage)
-        model_cp.load_state_dict(checkpoint['model'])
-        model = BertModelWrapper(model_cp)
-    #else:
-    #    model = CNN_MODEL(tokenizer, model_args,
-    #                      n_labels=checkpoint['args']['labels']).to(device)
-    #    model.load_state_dict(checkpoint['model'])
+    model_cp.load_state_dict(checkpoint['model'])
+    model = BertModelWrapper(model_cp)
 
     model.train()
 
-    pad_to_max = False
     if saliency == 'deeplift':
         ablator = DeepLift(model)
     elif saliency == 'guided':
@@ -198,8 +189,8 @@ def generate_saliency(model_path, saliency_path, saliency, aggregation):
             input_embeddings = interpretable_embedding.indices_to_embeddings(
                 batch[0])
 
-        if not args.no_time:
-            high.start_counters([events.PAPI_FP_OPS, ])
+        #if not args.no_time:
+        #    high.start_counters([events.PAPI_FP_OPS, ])
         #for cls_ in range(checkpoint['args']['labels']):
         for cls_ in range(labels):
             if saliency == 'occlusion':
@@ -220,8 +211,8 @@ def generate_saliency(model_path, saliency_path, saliency, aggregation):
             class_attr_list[cls_] += [[_li for _li in _l] for _l in
                                       attributions]
 
-        if not args.no_time:
-            saliency_flops.append(sum(high.stop_counters()) / batch[0].shape[0])
+        #if not args.no_time:
+        #    saliency_flops.append(sum(high.stop_counters()) / batch[0].shape[0])
 
     if saliency != 'occlusion':
         remove_interpretable_embedding_layer(model, interpretable_embedding)
@@ -243,7 +234,7 @@ def generate_saliency(model_path, saliency_path, saliency, aggregation):
             out.write(json.dumps({'tokens': saliencies}) + '\n')
             out.flush()
 
-    return saliency_flops
+    #return saliency_flops
 
 
 if __name__ == "__main__":
@@ -311,15 +302,14 @@ if __name__ == "__main__":
                 os.mkdir(path_out)
 
             for run in range(1, 4):
-                curr_flops = generate_saliency(
-                    #os.path.join(models_dir + '/best.pth.tar'),
+                generate_saliency(
                     args.models_dir,
                     os.path.join(path_out,f'scores_{saliency}_{aggregation}_{run}'),
                     saliency,
                     aggregation)
 
-                flops.append(np.average(curr_flops))
+                #flops.append(np.average(curr_flops))
 
-            print('FLOPS', np.average(flops), np.std(flops), flush=True)
-            print()
-            print()
+            #print('FLOPS', np.average(flops), np.std(flops), flush=True)
+            #print()
+            #print()
