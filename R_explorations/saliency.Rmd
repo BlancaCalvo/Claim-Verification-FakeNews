@@ -299,7 +299,7 @@ metrics_list%>%
   scale_x_discrete(labels=metrics_list[["ID"]][1:299])+
   #theme(axis.text.x = element_blank(), axis.text.y=element_blank())+
   #xlim(0, length(unique(metrics_list$ID)))
-  labs(x="Token",y="Metric")
+  labs(x="Token",y="Metric", fill="Normalised Saliency")
 
 name_file = paste0("visuals/saliency/telemundo_example", as.character(i))
 name_file =paste0(name_file, '.png')
@@ -308,6 +308,57 @@ print(name_file)
 ggsave(file=name_file, width=30, height=4, dpi=400) #width=9, height=2, dpi=100
 ```
 
+```{r easyA}
+i = 2
+
+metrics_list<- get_format_sal(list_metrics, i, list_metric_names,list_labels[i], props = FALSE)
+
+#token_values <- get_format_sal(example1_1)
+
+metrics_list%>%
+  #mutate(ID = fct_reorder(ID,order)) %>%
+  filter(as.integer(order)< 100)%>%
+  ggplot(aes(x=order, y=stat, fill=normalised)) + geom_tile()+
+  scale_fill_gradient(low = "white", high = "#4186BE") +
+  theme(axis.text.x = element_text(angle = 70, size = 12), axis.text.y = element_text(size = 12))+
+  scale_x_discrete(labels=metrics_list[["ID"]][1:299])+
+  #theme(axis.text.x = element_blank(), axis.text.y=element_blank())+
+  #xlim(0, length(unique(metrics_list$ID)))
+  labs(x="Token",y="Metric")#, fill="Normalised \n Saliency")
+
+name_file = paste0("visuals/saliency/easyA_example", as.character(i))
+name_file =paste0(name_file, '.png')
+print(name_file)
+
+ggsave(file=name_file, width=30, height=4, dpi=400) #width=9, height=2, dpi=100
+#ggsave(file='visuals/saliency/easyA_printable.png', width=9, height=2, dpi=100)
+```
+
+```{r indian_army}
+i = 7
+
+metrics_list<- get_format_sal(list_metrics, i, list_metric_names,list_labels[i], props = FALSE)
+
+#token_values <- get_format_sal(example1_1)
+
+metrics_list%>%
+  #mutate(ID = fct_reorder(ID,order)) %>%
+  filter(as.integer(order)< 100)%>%
+  ggplot(aes(x=order, y=stat, fill=normalised)) + geom_tile()+
+  scale_fill_gradient(low = "white", high = "#4186BE") +
+  theme(axis.text.x = element_text(angle = 70, size = 12), axis.text.y = element_text(size = 12))+
+  scale_x_discrete(labels=metrics_list[["ID"]][1:299])+
+  #theme(axis.text.x = element_blank(), axis.text.y=element_blank())+
+  #xlim(0, length(unique(metrics_list$ID)))
+  labs(x="Token",y="Metric")#, fill="Normalised \n Saliency")
+
+name_file = paste0("visuals/saliency/indian_army", as.character(i))
+name_file =paste0(name_file, '.png')
+print(name_file)
+
+ggsave(file=name_file, width=10, height=4, dpi=400) #width=9, height=2, dpi=100
+#ggsave(file='visuals/saliency/easyA_printable.png', width=9, height=2, dpi=100)
+```
 
 
 ## Sembert Gold

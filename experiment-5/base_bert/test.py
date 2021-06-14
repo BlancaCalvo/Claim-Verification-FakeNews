@@ -43,6 +43,7 @@ parser.add_argument("--dev_features", default='data/gear/N_gear-dev-set-0_001.ts
 parser.add_argument("--seq_length", default=300, type=int, required=False)
 parser.add_argument("--batch_size", default=16, type=int, required=False)
 parser.add_argument("--out", default=None, type=str, required=True)
+parser.add_argument("--base_dir", default='experiment-5/outputs/F-base-bert-2/', type=str, required=False)
 args = parser.parse_args()
 
 #args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -91,7 +92,7 @@ best_result = 0.0
 seeds = [314]
 
 for seed in seeds:
-    base_dir = 'experiment-5/outputs/F-base-bert-2/'
+    base_dir = args.base_dir
 
     # FOR SOME REASON KEYS OF THE DICT CONTAIN MODULE., CHECK WHY
     checkpoint = torch.load(base_dir + 'best.pth.tar')

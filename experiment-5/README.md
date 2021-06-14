@@ -59,7 +59,7 @@ python experiment-5/sembert_train.py  --train_file data/srl_features/N_train_srl
 
 python experiment-5/sembert_train.py  --train_file data/srl_features/gold_train_srl_all.json --dev_file data/srl_features/gold_dev_srl_all.json --mapping tags1 --cuda_devices 1 --seq_length 50 --batch_size 20 --max_num_aspect 4
 
-PYTHONPATH=experiment-5 python experiment-5/evaluation/test.py --mapping tags1 --seq_length 250 --max_num_aspect 12 --batch_size 20 --dataset data/srl_features/dev_srl_all.json --out dev-results.txt
+PYTHONPATH=experiment-5 python experiment-5/evaluation/test.py --mapping tags1 --seq_length 250 --max_num_aspect 12 --batch_size 20 --dataset data/srl_features/N_dev_srl_all.json --out dev-results.txt
 ```
 
 ### OpenIE extraction
@@ -90,7 +90,7 @@ PYTHONPATH=experiment-5 python experiment-5/evaluation/test.py
     --batch_size 20
 ```
 
-### FEVER score
+### FEVER score for dev set
 
 ```
 python experiment-5/evaluation/results_scorer.py 
@@ -98,8 +98,26 @@ python experiment-5/evaluation/results_scorer.py
     --predicted_evidence data/gear/bert-nli-dev-retrieve-set.tsv 
     --actual data/fever/shared_task_dev.jsonl
 
-python experiment-5/evaluation/results_scorer.py --predicted_labels experiment-5/outputs/f_sembert-concat_True-agg_False-20batch_size-250seq_length-12n_aspect-tags1/test-results.tsv --predicted_evidence data/gear/bert-nli-test-retrieve-set.tsv --shared_task data/fever/shared_task_dev.jsonl --test
+```
 
+### Produce prediction files for test set
+
+```
+PYTHONPATH=experiment-5 python experiment-5/evaluation/test.py --mapping tags1 --seq_length 250 --max_num_aspect 12 --batch_size 20 --dataset data/srl_features/N_test_srl_all.json --out test-results.txt
+
+python experiment-5/evaluation/results_scorer.py --predicted_labels experiment-5/outputs/f_sembert-concat_True-agg_False-20batch_size-250seq_length-12n_aspect-tags1/test-results.tsv --predicted_evidence data/gear/bert-nli-test-retrieve-set.tsv --test
+
+CUDA_VISIBLE_DEVICES=0 python experiment-5/base_bert/test.py --dev_features data/gear/N_gear-test-set-0_001.tsv --out test-results.tsv
+
+python experiment-5/evaluation/results_scorer.py --predicted_labels experiment-5/outputs/F-base-bert-2/test-results.tsv --predicted_evidence data/gear/bert-nli-test-retrieve-set.tsv --shared_task data/fever/shared_task_test.jsonl --test
+
+PYTHONPATH=experiment-5 python experiment-5/evaluation/test.py --model_path experiment-5/outputs/gold_sembert-concat_True-agg_False-20batch_size-250seq_length-8n_aspect-tags1/  --dataset data/srl_features/N_test_srl_all.json --out test-results.txt  --mapping tags1 --max_num_aspect 8
+
+python experiment-5/evaluation/results_scorer.py --predicted_labels experiment-5/outputs/gold_sembert-concat_True-agg_False-20batch_size-250seq_length-8n_aspect-tags1/test-results.tsv --predicted_evidence data/gear/bert-nli-test-retrieve-set.tsv --test
+
+CUDA_VISIBLE_DEVICES=1 python experiment-5/base_bert/test.py --dev_features data/gear/N_gear-test-set-0_001.tsv --out test-results.tsv --base_dir experiment-5/outputs/gold-base-bert/
+
+python experiment-5/evaluation/results_scorer.py --predicted_labels experiment-5/outputs/gold-base-bert/test-results.tsv --predicted_evidence data/gear/bert-nli-test-retrieve-set.tsv --shared_task data/fever/shared_task_test.jsonl --test
 
 ```
 
