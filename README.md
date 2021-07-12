@@ -1,3 +1,7 @@
+
+
+
+
 ### Requirements
 
 ```
@@ -46,20 +50,37 @@ CUDA_VISIBLE_DEVICES=0 python code/SRL_extraction.py
     --output_file data/srl_features/train_srl_all.json 
     --cuda 0 
 
-CUDA_VISIBLE_DEVICES=0 python code/SRL_extraction.py --input_file data/gear/gold_gear-dev-set-0_001.tsv --output_file data/srl_features/gold_dev_srl_all.json --cuda 0
+CUDA_VISIBLE_DEVICES=0 python code/SRL_extraction.py 
+    --input_file data/gear/gold_gear-dev-set-0_001.tsv 
+    --output_file data/srl_features/gold_dev_srl_all.json 
+    --cuda 0
 
-CUDA_VISIBLE_DEVICES=0 python code/SRL_extraction.py --input_file data/gear/examples.tsv --output_file data/srl_features/examples.json --cuda 0
+CUDA_VISIBLE_DEVICES=0 python code/SRL_extraction.py 
+    --input_file data/gear/examples.tsv 
+    --output_file data/srl_features/examples.json 
+    --cuda 0
 
 ```
 
 ### Train and test Sembert with Semantic Role Labels
 
 ```
-python code/sembert_train.py  --train_file data/srl_features/N_train_srl_all.json --dev_file data/srl_features/N_dev_srl_all.json --mapping tags1 --cuda_devices 0,1,2 --seq_length 250 --batch_size 20 --max_num_aspect 12 
+python code/sembert_train.py  
+    --train_file data/srl_features/N_train_srl_all.json 
+    --dev_file data/srl_features/N_dev_srl_all.json 
+    --mapping tags1 
+    --cuda_devices 0,1,2 
+    --seq_length 250 
+    --batch_size 20 
+    --max_num_aspect 12 
 
-python code/sembert_train.py  --train_file data/srl_features/gold_train_srl_all.json --dev_file data/srl_features/gold_dev_srl_all.json --mapping tags1 --cuda_devices 1 --seq_length 50 --batch_size 20 --max_num_aspect 4
-
-PYTHONPATH=experiment-5 python code/evaluation/test.py --mapping tags1 --seq_length 250 --max_num_aspect 12 --batch_size 20 --dataset data/srl_features/N_dev_srl_all.json --out dev-results.txt
+PYTHONPATH=code python code/evaluation/test.py 
+    --mapping tags1 
+    --seq_length 250 
+    --max_num_aspect 12 
+    --batch_size 20 
+    --dataset data/srl_features/N_dev_srl_all.json 
+    --out dev-results.txt
 ```
 
 ### OpenIE extraction
@@ -81,9 +102,16 @@ CUDA_VISIBLE_DEVICES=1 python code/OIE_extraction.py
 ### Train and test Sembert with OpenIE
 
 ```
-python code/sembert_train.py --train_file data/oie_features/train_oie_all.json --dev_file data/oie_features/dev_oie_all.json --mapping binary --cuda_devices 0,1,2 --seq_length 250 --batch_size 20 --max_num_aspect 12
+python code/sembert_train.py 
+    --train_file data/oie_features/train_oie_all.json 
+    --dev_file data/oie_features/dev_oie_all.json 
+    --mapping binary 
+    --cuda_devices 0,1,2 
+    --seq_length 250 
+    --batch_size 20 
+    --max_num_aspect 12
 
-PYTHONPATH=experiment-5 python code/evaluation/test.py 
+PYTHONPATH=code python code/evaluation/test.py 
     --mapping binary 
     --seq_length 250 
     --max_num_aspect 12 
@@ -103,59 +131,66 @@ python code/evaluation/results_scorer.py
 ### Produce prediction files for test set
 
 ```
-PYTHONPATH=experiment-5 python code/evaluation/test.py --mapping tags1 --seq_length 250 --max_num_aspect 12 --batch_size 20 --dataset data/srl_features/N_test_srl_all.json --out test-results.txt
+PYTHONPATH=code python code/evaluation/test.py 
+    --mapping tags1 
+    --seq_length 250 
+    --max_num_aspect 12 
+    --batch_size 20 
+    --dataset data/srl_features/N_test_srl_all.json 
+    --out test-results.txt
 
-python code/evaluation/results_scorer.py --predicted_labels code/outputs/f_sembert-concat_True-agg_False-20batch_size-250seq_length-12n_aspect-tags1/test-results.tsv --predicted_evidence data/gear/bert-nli-test-retrieve-set.tsv --test
+python code/evaluation/results_scorer.py 
+    --predicted_labels code/outputs/f_sembert-concat_True-agg_False-20batch_size-250seq_length-12n_aspect-tags1/test-results.tsv 
+    --predicted_evidence data/gear/bert-nli-test-retrieve-set.tsv --test
 
-CUDA_VISIBLE_DEVICES=0 python code/base_bert/test.py --dev_features data/gear/N_gear-test-set-0_001.tsv --out test-results.tsv
+CUDA_VISIBLE_DEVICES=0 python code/base_bert/test.py 
+    --dev_features data/gear/N_gear-test-set-0_001.tsv 
+    --out test-results.tsv
 
-python code/evaluation/results_scorer.py --predicted_labels code/outputs/F-base-bert-2/test-results.tsv --predicted_evidence data/gear/bert-nli-test-retrieve-set.tsv --shared_task data/fever/shared_task_test.jsonl --test
-
-PYTHONPATH=experiment-5 python code/evaluation/test.py --model_path code/outputs/gold_sembert-concat_True-agg_False-20batch_size-250seq_length-8n_aspect-tags1/  --dataset data/srl_features/N_test_srl_all.json --out test-results.txt  --mapping tags1 --max_num_aspect 8
-
-python code/evaluation/results_scorer.py --predicted_labels code/outputs/gold_sembert-concat_True-agg_False-20batch_size-250seq_length-8n_aspect-tags1/test-results.tsv --predicted_evidence data/gear/bert-nli-test-retrieve-set.tsv --test
-
-CUDA_VISIBLE_DEVICES=1 python code/base_bert/test.py --dev_features data/gear/N_gear-test-set-0_001.tsv --out test-results.tsv --base_dir code/outputs/gold-base-bert/
-
-python code/evaluation/results_scorer.py --predicted_labels code/outputs/gold-base-bert/test-results.tsv --predicted_evidence data/gear/bert-nli-test-retrieve-set.tsv --shared_task data/fever/shared_task_test.jsonl --test
+python code/evaluation/results_scorer.py 
+    --predicted_labels code/outputs/F-base-bert-2/test-results.tsv 
+    --predicted_evidence data/gear/bert-nli-test-retrieve-set.tsv 
+    --shared_task data/fever/shared_task_test.jsonl 
+    --test
 
 ```
 
-### Saliency Scores BERT model 
+### Saliency Scores BERT and SemBERT models
 
 Modified from: https://github.com/copenlu/xai-benchmark
 
 ```
-PYTHONPATH=code/ python code/saliency/interpret_grads_occ.py --models_dir code/outputs/F-base-bert-2/ --dataset_dir data/gear/examples.tsv --saliency guided sal
- inputx --model trans --dataset fever --no_time
-```
+PYTHONPATH=code/ python code/saliency/interpret_grads_occ.py 
+    --models_dir code/outputs/F-base-bert-2/ 
+    --dataset_dir data/gear/examples.tsv 
+    --saliency guided sal inputx 
+    --model trans 
+    --dataset fever 
+    --no_time
 
-### Saliency Scores SemBERT model
-
-```
-PYTHONPATH=code/ python code/saliency/sembert_interpret_grads.py --dev_file data/srl_features/examples.json --saliency guided sal inputx
+PYTHONPATH=code/ python code/saliency/sembert_interpret_grads.py 
+    --dev_file data/srl_features/examples.json 
+    --saliency guided sal inputx
 ```
 
 ### Testing with adversarial attacks
 
 ```
-CUDA_VISIBLE_DEVICES=0 python code/SRL_extraction.py --input_file data/gear/adversarial_examples.tsv --output_file data/srl_features/adversarial_examples.json --cuda 0
+CUDA_VISIBLE_DEVICES=0 python code/SRL_extraction.py 
+    --input_file data/gear/adversarial_examples.tsv 
+    --output_file data/srl_features/adversarial_examples.json 
+    --cuda 0
 
-PYTHONPATH=experiment-5 python code/evaluation/test.py --mapping tags1 --seq_length 250 --max_num_aspect 12 --batch_size 20 --dataset data/srl_features/adversarial_examples.json --out adver-results.tsv
+PYTHONPATH=code python code/evaluation/test.py 
+    --mapping tags1 
+    --seq_length 250 
+    --max_num_aspect 12 --batch_size 20 
+    --dataset data/srl_features/adversarial_examples.json 
+    --out adver-results.tsv
 
-CUDA_VISIBLE_DEVICES=0 python code/base_bert/test.py --dev_features data/gear/adversarial_examples.tsv --out adver-results.tsv
+CUDA_VISIBLE_DEVICES=0 python code/base_bert/test.py 
+    --dev_features data/gear/adversarial_examples.tsv 
+    --out adver-results.tsv
 ```
 
-### Testing with UKP-Snopes 
-
-```
-python code/preprocess/snopes_retrieval.py
-
-python code/preprocess/build_gear_input_set.py --snopes
-
-CUDA_VISIBLE_DEVICES=0 python code/SRL_extraction.py --input_file data/gear/N_gear-snopes-dev.tsv --output_file data/srl_features/snopes_dev.json --cuda 0
-
-PYTHONPATH=experiment-5 python code/evaluation/test.py --mapping tags1 --seq_length 250 --max_num_aspect 12 --batch_size 20 --dataset data/srl_features/snopes_dev.json --out snopes-results.tsv
-
-```
 
