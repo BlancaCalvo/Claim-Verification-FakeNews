@@ -1,6 +1,9 @@
 
+This repository has the code of my master thesis "A Semantics-Aware Approach to Automated Claim Verification" at the University of the Basque Country, the University of Groningen and Vicomtech. 
 
+### Abstract
 
+The influence of fake news in the perception of reality has become a mainstream topic in the last years due to the fast propagation of miss-leading information, which has been enhanced by social media. To contribute on the fight against misinformation, researchers have proposed to develop automated solutions. The task of automated claim verification consists in assessing the truthfulness of a claim by finding evidence about its veracity. Datasets with synthetic claims have been developed to train models that perform this task. However, naturally-occurring claims are usually semantically more complex than synthetic claims. In this work, we test if the use of explicit semantic structures can help with the task of claim verification. We introduce Semantic Role Labels and Open Information Extraction structures to a BERT model, showing some improvement on the performance of the task. Additionally, we perform some explainability tests which show that the semantically-enriched model is better at handling complex cases, such as sentences in passive form or with multiple propositions.
 
 ### Requirements
 
