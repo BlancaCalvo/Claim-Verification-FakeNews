@@ -7,7 +7,7 @@ output:
 
 
 ```{r setup, include=FALSE}
-knitr::opts_knit$set(root.dir = 'C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/')
+knitr::opts_knit$set(root.dir = '~/Desktop/ClaimVer/Claim-Verification-FakeNews/')
 knitr::opts_chunk$set(echo = FALSE, message = FALSE)
 library(dplyr)
 library(ggplot2)
@@ -15,14 +15,14 @@ library(compare)
 library(rjson)
 library(data.table)
 
-#setwd("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/")
+#setwd("~/Desktop/ClaimVer/Claim-Verification-FakeNews/")
 # REMEMBER: the working directory of the R sessions and the working directory of the notebook are different things!!!!
 
 ```
 
 
 ```{r ce2}
-dev<- read.table("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/dev_data_new.tsv", sep="\t", header=FALSE, comment.char="#", na.strings=".", stringsAsFactors=FALSE, quote="", fill=TRUE)
+dev<- read.table("~/Desktop/ClaimVer/Claim-Verification-FakeNews/data/gear/N_gear-dev-set-0_001.tsv", sep="\t", header=FALSE, comment.char="#", na.strings=".", stringsAsFactors=FALSE, quote="", fill=TRUE)
 
 
 #all_dev = merge(head(dev, -1), all, by.x=("V1"), by.y=("V5"))
@@ -105,7 +105,7 @@ results %>%
 ## Results from base_bert
 
 ```{r ce5}
-bert_results<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/bert_base/dev-results.tsv", header = FALSE, sep='\t')
+bert_results<- read.csv("~/Desktop/ClaimVer/Claim-Verification-FakeNews/code/outputs/F-base-bert-2/dev-results.tsv", header = FALSE, sep='\t')
 
 bert_results <- bert_results %>%
   #filter(V4!=2)%>%
@@ -126,7 +126,7 @@ ggsave(file="visuals/confusion_matrix/base_bert.png", width=6, height=4, dpi=400
 ## Results from sembert
 
 ```{r ce6}
-sembert_12_results<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_all_tags/dev-results.tsv", header = FALSE, sep='\t')
+sembert_12_results<- read.csv("~/Desktop/ClaimVer/Claim-Verification-FakeNews/code/outputs/sembert_all_tags/dev-results.tsv", header = FALSE, sep='\t')
 
 sembert_12_results <- sembert_12_results %>%
   #filter(V4!=2)%>%
@@ -160,7 +160,7 @@ d <- table_results(bert_small, sembert_12_results)
 ## Results from sembert with the DREAM mapping (sembert_dream)
 
 ```{r ce10}
-dream_mapping <- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_dream/dev-results.tsv", header = FALSE, sep='\t')
+dream_mapping <- read.csv("~/Desktop/ClaimVer/Claim-Verification-FakeNews/code/outputs/sembert_dream/dev-results.tsv", header = FALSE, sep='\t')
 
 dream_mapping_results <- dream_mapping %>%
   #filter(V4!=2)%>%
@@ -189,7 +189,7 @@ d<-table_results(bert_results, dream_mapping_results)
 ## Results sembert with more tags (sembert_tags1)
 
 ```{r ce12}
-tag_mapping<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_tags1/dev-results.tsv", header = FALSE, sep='\t')
+tag_mapping<- read.csv("~/Desktop/ClaimVer/Claim-Verification-FakeNews/code/outputs/f_sembert-concat_True-agg_False-20batch_size-250seq_length-12n_aspect-tags1/dev-results.tsv", header = FALSE, sep='\t')
 
 tag_mapping_results <- tag_mapping %>%
   #filter(V4!=2)%>%
@@ -220,7 +220,7 @@ differing<-table_results(bert_results, tag_mapping_results)
 ## Results sembert with OpenIE
 
 ```{r ce12}
-oie<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_oie/dev-results.tsv", header = FALSE, sep='\t')
+oie<- read.csv("~/Desktop/ClaimVer/Claim-Verification-FakeNews/code/outputs/sembert_oie/dev-results.tsv", header = FALSE, sep='\t')
 
 oie_results <- oie %>%
   #filter(V4!=2)%>%
@@ -240,7 +240,7 @@ ggsave(file="visuals/confusion_matrix/sembert_oie_tags1.png", width=6, height=4,
 
 
 ```{r ce12}
-oie<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_oie_tags1/dev-results.tsv", header = FALSE, sep='\t')
+oie<- read.csv("~/Desktop/ClaimVer/Claim-Verification-FakeNews/code/outputs/sembert_oie_tags1/dev-results.tsv", header = FALSE, sep='\t')
 
 oie_results <- oie %>%
   #filter(V4!=2)%>%
@@ -270,7 +270,7 @@ differing<-table_results(bert_results, oie_results)
 ## Results sembert with tags1+attention
 
 ```{r ce16}
-att_tag<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_att_tags1/dev-results.tsv", header = FALSE, sep='\t')
+att_tag<- read.csv("~/Desktop/ClaimVer/Claim-Verification-FakeNews/code/outputs/sembert_att_tags1/dev-results.tsv", header = FALSE, sep='\t')
 
 att_tag_results <- att_tag %>%
   #filter(V4!=2)%>%
@@ -294,7 +294,7 @@ ggsave(file="visuals/confusion_matrix/sembert_att_tags1.png", width=6, height=4,
 ### BERT
 
 ```{r ce6}
-gold_b<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/gold_bert_base/dev-results.tsv", header = FALSE, sep='\t')
+gold_b<- read.csv("~/Desktop/ClaimVer/Claim-Verification-FakeNews/code/outputs/gold_bert_base/dev-results.tsv", header = FALSE, sep='\t')
 
 gold_b_results <- gold_b %>%
   #filter(V4!=2)%>%
@@ -317,7 +317,7 @@ ggsave(file="visuals/confusion_matrix/bert_gold.png", width=6, height=4, dpi=400
 ### Sembert gold
 
 ```{r ce6}
-gold<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/gold_sembert_tags1/dev-results.tsv", header = FALSE, sep='\t')
+gold<- read.csv("~/Desktop/ClaimVer/Claim-Verification-FakeNews/code/outputs/gold_sembert_tags1/dev-results.tsv", header = FALSE, sep='\t')
 
 gold_results <- gold %>%
   #filter(V4!=2)%>%
@@ -340,7 +340,7 @@ ggsave(file="visuals/confusion_matrix/sembert_gold.png", width=6, height=4, dpi=
 ### Sembert gold little
 
 ```{r ce6}
-gold<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/gold_little/dev-results3.tsv", header = FALSE, sep='\t')
+gold<- read.csv("~/Desktop/ClaimVer/Claim-Verification-FakeNews/code/outputs/gold_little/dev-results3.tsv", header = FALSE, sep='\t')
 
 gold_results <- gold %>%
   #filter(V4!=2)%>%
@@ -361,7 +361,7 @@ ggsave(file="visuals/confusion_matrix/sembert_gold_little.png", width=6, height=
 
 
 ```{r ce6}
-gold<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/gold_little/dev-results4.tsv", header = FALSE, sep='\t')
+gold<- read.csv("~/Desktop/ClaimVer/Claim-Verification-FakeNews/code/outputs/gold_little/dev-results4.tsv", header = FALSE, sep='\t')
 
 gold_results <- gold %>%
   #filter(V4!=2)%>%
@@ -383,7 +383,7 @@ ggsave(file="visuals/confusion_matrix/sembert_gold_little.png", width=6, height=
 
 
 ```{r ce1, include=FALSE, eval=FALSE}
-json_data <- fromJSON(paste(readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/dev_srl_all.json"), collapse=""))
+json_data <- fromJSON(paste(readLines("~/Desktop/ClaimVer/Claim-Verification-FakeNews/data/gear/dev_srl_all.json"), collapse=""))
 
 json_data[[1]]$evidence_srl$verbs[[1]]$tags
 
@@ -440,7 +440,7 @@ for (i in 1:nrow(c)){
 
 
 ```{r ce17, include=FALSE, eval=FALSE}
-gold_dev<- read.table("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/gold_evidence_dev.tsv", sep="\t", header=FALSE, comment.char="#", na.strings=".", stringsAsFactors=FALSE, quote="", fill=TRUE)
+gold_dev<- read.table("~/Desktop/ClaimVer/Claim-Verification-FakeNews/data/gear/gold_evidence_dev.tsv", sep="\t", header=FALSE, comment.char="#", na.strings=".", stringsAsFactors=FALSE, quote="", fill=TRUE)
 ```
 
 
@@ -449,14 +449,14 @@ gold_dev<- read.table("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/da
 library(jsonlite)
 library(dplyr)
 
-lines <- readLines("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/retrieved/dev.ensembles.s10.jsonl")
+lines <- readLines("~/Desktop/ClaimVer/Claim-Verification-FakeNews/data/retrieved/dev.ensembles.s10.jsonl")
 lines <- lapply(lines, fromJSON)
 lines <- lapply(lines, unlist)
 x <- bind_rows(lines)
 ```
 
 ```{r ce19, include=FALSE, eval=TRUE}
-x <- scan("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/annotations/multi-hop-index.txt", what="", sep="\n")
+x <- scan("~/Desktop/ClaimVer/Claim-Verification-FakeNews/annotations/multi-hop-index.txt", what="", sep="\n")
 # Separate elements by one or more whitepace
 y <- strsplit(x, "[[:space:]]+")
 ```

@@ -54,9 +54,9 @@ CUDA_VISIBLE_DEVICES=0 python code/SRL_extraction.py
     --output_file data/srl_features/train_srl_all.json 
     --cuda 0 
 
-CUDA_VISIBLE_DEVICES=0 python code/SRL_extraction.py 
-    --input_file data/gear/gold_gear-dev-set-0_001.tsv 
-    --output_file data/srl_features/gold_dev_srl_all.json 
+CUDA_VISIBLE_DEVICES=0 python code/SRL_extraction.py \
+    --input_file data/gear/N_gear-dev-set-0_001.tsv \
+    --output_file data/srl_features/dev_srl_all.json \
     --cuda 0
 
 CUDA_VISIBLE_DEVICES=0 python code/SRL_extraction.py 
@@ -70,8 +70,8 @@ CUDA_VISIBLE_DEVICES=0 python code/SRL_extraction.py
 
 ```
 python code/sembert_train.py  
-    --train_file data/srl_features/N_train_srl_all.json 
-    --dev_file data/srl_features/N_dev_srl_all.json 
+    --train_file data/srl_features/train_srl_all.json 
+    --dev_file data/srl_features/dev_srl_all.json 
     --mapping tags1 
     --cuda_devices 0,1,2 
     --seq_length 250 
@@ -83,7 +83,7 @@ PYTHONPATH=code python code/evaluation/test.py
     --seq_length 250 
     --max_num_aspect 12 
     --batch_size 20 
-    --dataset data/srl_features/N_dev_srl_all.json 
+    --dataset data/srl_features/dev_srl_all.json 
     --out dev-results.txt
 ```
 
@@ -99,7 +99,7 @@ CUDA_VISIBLE_DEVICES=0 python code/OIE_extraction.py
 
 CUDA_VISIBLE_DEVICES=1 python code/OIE_extraction.py 
     --input_file data/gear/N_gear-dev-set-0_001.tsv 
-    --output_file data/oie_features/N_dev_oie_all.json 
+    --output_file data/oie_features/dev_oie_all.json 
     --cuda 0
 ```
 
@@ -166,7 +166,7 @@ Modified from: https://github.com/copenlu/xai-benchmark
 ```
 PYTHONPATH=code/ python code/saliency/interpret_grads_occ.py 
     --models_dir code/outputs/F-base-bert-2/ 
-    --dataset_dir data/gear/examples.tsv 
+    --dataset_dir data/X_tests/examples.tsv 
     --saliency guided sal inputx 
     --model trans 
     --dataset fever 
@@ -180,21 +180,20 @@ PYTHONPATH=code/ python code/saliency/sembert_interpret_grads.py
 ### Testing with adversarial attacks
 
 ```
-CUDA_VISIBLE_DEVICES=0 python code/SRL_extraction.py 
-    --input_file data/gear/adversarial_examples.tsv 
-    --output_file data/srl_features/adversarial_examples.json 
-    --cuda 0
+python code/SRL_extraction.py \
+    --input_file data/X_tests/adversarial_examples.tsv \
+    --output_file data/srl_features/adversarial_examples.json
 
-PYTHONPATH=code python code/evaluation/test.py 
-    --mapping tags1 
-    --seq_length 250 
-    --max_num_aspect 12 --batch_size 20 
-    --dataset data/srl_features/adversarial_examples.json 
-    --out adver-results.tsv
+PYTHONPATH=code python code/evaluation/test.py \
+    --mapping tags1 \
+    --seq_length 250 \
+    --max_num_aspect 12 --batch_size 20 \
+    --dataset data/srl_features/adversarial_examples.json \
+    --out adver-results.tsv --no_cuda
 
-CUDA_VISIBLE_DEVICES=0 python code/base_bert/test.py 
-    --dev_features data/gear/adversarial_examples.tsv 
-    --out adver-results.tsv
+PYTHONPATH=code python code/base_bert/test.py \
+    --dev_features data/X_tests/adversarial_examples.tsv \
+    --out adver-results.tsv --no_cuda
 ```
 
 

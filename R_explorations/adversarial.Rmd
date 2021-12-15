@@ -4,7 +4,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_knit$set(root.dir = 'C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/')
+
 knitr::opts_chunk$set(echo = FALSE, message = FALSE)
 library(dplyr)
 library(ggplot2)
@@ -17,7 +17,7 @@ library(data.table)
 ```
 
 ```{r pressure, echo=FALSE}
-adver<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/bert_base/adver-results.tsv", header = FALSE, sep='\t')
+adver<- read.csv("~/Desktop/ClaimVer/Claim-Verification-FakeNews/code/outputs/F-base-bert-2/adver-results.tsv", header = FALSE, sep='\t')
 
 adver_results <- adver %>%
   #filter(V4!=2)%>%
@@ -30,7 +30,7 @@ print(sum(adver_results$right)/nrow(adver_results))
 
 ```
 ```{r pressure, echo=FALSE}
-sem_adver<- read.csv("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/experiment-5/outputs/sembert_tags1/adver-results.tsv", header = FALSE, sep='\t')
+sem_adver<- read.csv("~/Desktop/ClaimVer/Claim-Verification-FakeNews/code/outputs/f_sembert-concat_True-agg_False-20batch_size-250seq_length-12n_aspect-tags1/adver-results.tsv", header = FALSE, sep='\t')
 
 sem_adver_results <- sem_adver %>%
   #filter(V4!=2)%>%
@@ -45,7 +45,7 @@ print(sum(sem_adver_results$right)/nrow(sem_adver_results))
 
 
 ```{r explore}
-ad<- read.table("C:/Users/bcalvo/Box/bcalvo/Claim-Verification-FakeNews/data/gear/adversarial_examples.tsv", sep="\t", header=FALSE, comment.char="#", na.strings=".", stringsAsFactors=FALSE, quote="", fill=TRUE)
+ad<- read.table("~/Desktop/ClaimVer/Claim-Verification-FakeNews/data/X_tests/adversarial_examples.tsv", sep="\t", header=FALSE, comment.char="#", na.strings=".", stringsAsFactors=FALSE, quote="", fill=TRUE)
 
 ```
 

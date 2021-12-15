@@ -43,7 +43,8 @@ parser.add_argument("--dev_features", default='data/gear/N_gear-dev-set-0_001.ts
 parser.add_argument("--seq_length", default=300, type=int, required=False)
 parser.add_argument("--batch_size", default=16, type=int, required=False)
 parser.add_argument("--out", default=None, type=str, required=True)
-parser.add_argument("--base_dir", default='experiment-5/outputs/F-base-bert-2/', type=str, required=False)
+parser.add_argument("--base_dir", default='code/outputs/F-base-bert-2/', type=str, required=False)
+parser.add_argument("--no_cuda", action='store_true')
 args = parser.parse_args()
 
 #args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -61,7 +62,7 @@ dev_encoded_dataset = convert_examples_to_features(examples=dev_dataset, seq_len
 num_labels = 3
 model = BertForSequenceClassification.from_pretrained(model_checkpoint, num_labels=num_labels)
 
-def flat_accuracy(preds, labels): # from https://medium.com/@aniruddha.choudhury94/part-2-bert-fine-tuning-tutorial-with-pytorch-for-text-classification-on-the-corpus-of-linguistic-18057ce330e1
+def flat_accuracy(preds, labels):
     pred_flat = np.argmax(preds, axis=1).flatten()
     labels_flat = labels.flatten()
     return np.sum(pred_flat == labels_flat) / len(labels_flat)
@@ -81,11 +82,14 @@ validation_dataloader = DataLoader(validation_data, sampler=validation_sampler, 
 # PARAMETERS
 seed_val = 42
 epochs = 4
-cuda = 0
+#cuda = 0
 
-device = torch.device("cuda")
+if not args.no_cuda:
+    device = "cuda:0" # això fora de vicomtech s'ha de canviar
+else:
+    device='cpu'
+
 model.to(device)
-
 best_epoch = 0
 best_result = 0.0
 
@@ -94,8 +98,7 @@ seeds = [314]
 for seed in seeds:
     base_dir = args.base_dir
 
-    # FOR SOME REASON KEYS OF THE DICT CONTAIN MODULE., CHECK WHY
-    checkpoint = torch.load(base_dir + 'best.pth.tar')
+    checkpoint = torch.load(base_dir + 'best.pth.tar', map_location=torch.device(device))
     #print(type(checkpoint['model'])) # should be dict
     # new_checkpoint = checkpoint
     # checkpoint_new_names = {}

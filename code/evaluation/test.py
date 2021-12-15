@@ -1,8 +1,7 @@
-import random, os
+import os
 import argparse
-import numpy as np
 import torch
-from fever_bert_srl import read_srl_examples, read_srl_examples_concat
+from sembert_train import read_srl_examples, read_srl_examples_concat
 from transformers.models.bert.tokenization_bert import BertTokenizer
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 
@@ -30,6 +29,7 @@ parser.add_argument("--model_path", default=None, type=str, required=False)
 #parser.add_argument("--trial", action='store_true', help="Set this flag to test on a trial dataset.")
 parser.add_argument("--out", default=None, type=str, required=True)
 #parser.add_argument("--cuda_devices", default='-1', type=str, required=False)
+parser.add_argument("--no_cuda", action='store_true')
 
 args = parser.parse_args()
 
@@ -85,54 +85,53 @@ else:
 
 seeds = [1995]
 
-device = "cuda:0"
+if not args.no_cuda:
+    device = "cuda:0" # això fora de vicomtech s'ha de canviar
+else:
+    device='cpu'
+
+#for seed in seeds:
+if args.model_path:
+    base_dir = args.model_path
+else:
+    base_dir = 'code/outputs/f_sembert-concat_True-agg_%s-%dbatch_size-%dseq_length-%dn_aspect-%s/' % (str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect, str(args.mapping))
+if not os.path.exists(base_dir):
+     print('%s results do not exist!' % base_dir)
+     exit()
+
+
+checkpoint = torch.load(base_dir + 'best.pth.tar', map_location=torch.device(device))
+#print(type(checkpoint['model'])) # should be dict
+new_checkpoint = checkpoint
+checkpoint_new_names = {}
+for i in checkpoint['model'].keys():
+    checkpoint_new_names[i] = i[7:]
+new_checkpoint['model'] = dict((checkpoint_new_names[key], value) for (key, value) in checkpoint['model'].items())
+
+model.load_state_dict(new_checkpoint['model'])
 model.to(device)
+model.eval()
 
-for seed in seeds:
-    if args.model_path:
-        base_dir = args.model_path
-    else:
-        base_dir = 'experiment-5/outputs/f_sembert-concat_True-agg_%s-%dbatch_size-%dseq_length-%dn_aspect-%s/' % (str(args.aggregate), args.batch_size, args.seq_length, args.max_num_aspect, str(args.mapping))
-    if not os.path.exists(base_dir):
-        print('%s results do not exist!' % base_dir)
-        continue
+#if args.test:
+#    fout = open(base_dir + 'test-results.tsv', 'w')
+#elif args.trial:
+#    fout = open(base_dir + 'trial-results.tsv', 'w')
+#else:
+#    fout = open(base_dir + 'dev-results.tsv', 'w')
+fout = open(base_dir + args.out, 'w')
 
+#dev_tqdm_iterator = tqdm(dev_dataloader)
+with torch.no_grad():
+    for batch in dev_dataloader:
+        batch = tuple(t.to(device) for t in batch)
+        input_ids, input_mask, segment_ids, start_end_idx, input_tag_ids, label_ids, index_ids = batch
 
-    checkpoint = torch.load(base_dir + 'best.pth.tar')
-    #print(type(checkpoint['model'])) # should be dict
-    new_checkpoint = checkpoint
-    checkpoint_new_names = {}
-    for i in checkpoint['model'].keys():
-        checkpoint_new_names[i] = i[7:]
-    new_checkpoint['model'] = dict((checkpoint_new_names[key], value) for (key, value) in checkpoint['model'].items())
-    #print(new_checkpoint['model'].keys())
-    #print(new_checkpoint['model']['dense.weight'].shape)
-    #print(new_checkpoint['model']['dense.bias'].shape)
-
-
-    model.load_state_dict(new_checkpoint['model'])
-    model.eval()
-
-    #if args.test:
-    #    fout = open(base_dir + 'test-results.tsv', 'w')
-    #elif args.trial:
-    #    fout = open(base_dir + 'trial-results.tsv', 'w')
-    #else:
-    #    fout = open(base_dir + 'dev-results.tsv', 'w')
-    fout = open(base_dir + args.out, 'w')
-
-    #dev_tqdm_iterator = tqdm(dev_dataloader)
-    with torch.no_grad():
-        for batch in dev_dataloader:
-            batch = tuple(t.to(device) for t in batch)
-            input_ids, input_mask, segment_ids, start_end_idx, input_tag_ids, label_ids, index_ids = batch
-
-            if args.aggregate:
-                logits = model(input_ids,  input_tag_ids, index_ids, segment_ids, input_mask, start_end_idx, None)
-            else:
-                logits = model(input_ids, input_tag_ids, segment_ids, input_mask, start_end_idx, None)
+        if args.aggregate:
+            logits = model(input_ids,  input_tag_ids, index_ids, segment_ids, input_mask, start_end_idx, None, no_cuda=args.no_cuda)
+        else:
+            logits = model(input_ids, input_tag_ids, segment_ids, input_mask, start_end_idx, None, no_cuda=args.no_cuda)
 
 
-            for i in range(logits.shape[0]):
-                fout.write('{}\t{}\t{}\t{}\t{}\n'.format(logits[i][0], logits[i][1], logits[i][2], label_ids[i], index_ids[i]))
-    fout.close()
+        for i in range(logits.shape[0]):
+            fout.write('{}\t{}\t{}\t{}\t{}\n'.format(logits[i][0], logits[i][1], logits[i][2], label_ids[i], index_ids[i]))
+fout.close()
