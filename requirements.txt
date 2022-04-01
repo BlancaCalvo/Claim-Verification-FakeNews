@@ -1,10 +1,10 @@
-#pip==20.1.1
+pip==20.1.1
 allennlp==1.3.0
 allennlp-models==1.3.0
 torch==1.7.1
 transformers==4.0.1
 # I also needed 4.1.0 at some point for extracting SRL, a bit of a mess with allennlp predictors
-git+git://github.com/j6mes/drqa@parallel
-#git+git://github.com/sheffieldnlp/fever-scorer # I've cloned this instead, I'm not sure if it will work
+git+https://github.com/j6mes/drqa@parallel
+#git++https://github.com/sheffieldnlp/fever-scorer # I've cloned this instead, I'm not sure if it will work
 captum==0.2.0
 python-papi==5.5.1.2

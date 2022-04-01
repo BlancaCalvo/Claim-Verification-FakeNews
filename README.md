@@ -9,7 +9,7 @@ The influence of fake news in the perception of reality has become a mainstream 
 ### Requirements
 
 ```
-pip install -r requirement.txt
+pip install -r requirements.txt
 ```
 
 ### Evidence retrieval (from the scripts of Athene UKP TU Darmstadt)
@@ -78,12 +78,12 @@ python code/sembert_train.py
     --batch_size 20 
     --max_num_aspect 12 
 
-PYTHONPATH=code python code/evaluation/test.py 
-    --mapping tags1 
-    --seq_length 250 
-    --max_num_aspect 12 
-    --batch_size 20 
-    --dataset data/srl_features/dev_srl_all.json 
+PYTHONPATH=code python code/evaluation/test.py \
+    --mapping tags1 \
+    --seq_length 250 \
+    --max_num_aspect 12 \ 
+    --batch_size 20 \
+    --dataset data/srl_features/dev_srl_all.json \
     --out dev-results.txt
 ```
 
@@ -196,4 +196,27 @@ PYTHONPATH=code python code/base_bert/test.py \
     --out adver-results.tsv --no_cuda
 ```
 
+### Second Phase: Semantically complex claims and evidences
 
+```
+python code/saliency/filter_complex_claims.py
+
+python code/SRL_extraction.py \
+    --input_file data/X_tests/semantically_complex_evidence.tsv \
+    --output_file data/srl_features/semantically_complex_evidence.json
+
+PYTHONPATH=code python code/evaluation/test.py \
+    --mapping tags1 \
+    --seq_length 250 \
+    --max_num_aspect 12 \
+    --batch_size 20 \
+    --dataset data/srl_features/semantically_complex_evidence.json \
+    --out semantically_complex_evidence.tsv \
+    --no_cuda
+
+PYTHONPATH=code python code/base_bert/test.py \
+    --dev_features data/X_tests/semantically_complex_evidence.tsv \
+    --out semantically_complex_evidence.tsv --no_cuda
+    
+python code/evaluation/get_acc.py
+```
